@@ -108,7 +108,8 @@ async function generar() {
     if (!r.ok || !d.html) throw new Error(d.error || "Error " + r.status);
     mostrar(d.html);
     const seg = Math.round((Date.now() - t0) / 1000);
-    espera.textContent = "✅ ¡Listo en " + seg + " s! Mírala a la derecha (o abajo). Si quieres cambios, escríbelos.";
+    espera.textContent = "✅ Listo en " + seg + " s." + (d.resumen ? "\n" + d.resumen : "") +
+      "\n\nDesliza dentro de la vista previa para verla completa. Si quieres más cambios, escríbelos.";
     $("estado").textContent = "Hecha con " + d.modelo;
   } catch (e) {
     espera.textContent = "⚠️ " + e.message;
