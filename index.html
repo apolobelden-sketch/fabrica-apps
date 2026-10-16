@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fábrica de Apps</title>
+<style>
+:root{--bg:#f5f6f2;--panel:#fff;--tx:#1d2420;--sub:#66706a;--ac:#0f7a5c;--ac2:#e9f4ef;--bd:#dfe3dd;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#121614;--panel:#1b201d;--tx:#e8ece9;--sub:#9aa59f;--ac:#3fbf93;--ac2:#1f2d27;--bd:#2c3430;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--bd);background:var(--panel)}
+header h1{margin:0;font-size:1.15rem}
+header small{color:var(--sub)}
+main{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:14px;padding:14px 16px;height:calc(100vh - 62px)}
+@media (max-width:820px){main{grid-template-columns:1fr;height:auto}#vista{height:70vh}}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0}
+#chat{flex:1;overflow:auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:200px}
+.msg{padding:9px 12px;border-radius:10px;max-width:92%;line-height:1.4;white-space:pre-wrap;font-size:.95rem}
+.yo{background:var(--ac);color:#fff;align-self:flex-end}
+.ia{background:var(--ac2);align-self:flex-start}
+.ia.err{color:var(--err)}
+textarea{width:100%;min-height:90px;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--panel);color:var(--tx);font:inherit;resize:vertical}
+.fila{display:flex;gap:8px;flex-wrap:wrap}
+button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx)}
+button.prim{background:var(--ac);color:#fff;flex:1}
+button:disabled{opacity:.5;cursor:wait}
+.ejemplos{display:flex;gap:6px;flex-wrap:wrap}
+.ejemplos button{font-size:.8rem;padding:6px 10px;font-weight:500;border:1px solid var(--bd);background:var(--panel)}
+#vista{width:100%;height:100%;border:1px solid var(--bd);border-radius:12px;background:#fff}
+.barra{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.barra span{color:var(--sub);font-size:.85rem;margin-right:auto}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🏭 Fábrica de Apps</h1><small>Escribe tu idea y la IA te arma la app</small></div>
+  <button id="nuevo">Nuevo</button>
+</header>
+<main>
+  <section class="col">
+    <div id="chat"><div class="msg ia">¡Hola! Cuéntame qué app quieres. Por ejemplo: un menú para tu taquería, un catálogo de productos o un cuestionario para tus alumnos.</div></div>
+    <div class="ejemplos">
+      <button data-e="Menú digital para una taquería con precios en pesos, categorías (tacos, bebidas, extras) y un botón para pedir por WhatsApp al 5215555555555">🌮 Menú taquería</button>
+      <button data-e="Catálogo de productos para una tiendita con fotos con emojis, precio, buscador y carrito que manda el pedido por WhatsApp">🛍️ Catálogo</button>
+      <button data-e="Juego de repaso de tablas de multiplicar para niños de primaria con puntos, sonido de acierto y nivel fácil, medio y difícil">✖️ Tablas</button>
+      <button data-e="Agenda de citas para una barbería: elegir día, hora y servicio, y guardar la lista de citas">💈 Citas</button>
+    </div>
+    <textarea id="idea" placeholder="Ej.: Quiero una app para llevar el control de mis ventas del día..."></textarea>
+    <div class="fila"><button class="prim" id="enviar">Crear app</button></div>
+  </section>
+  <section class="col">
+    <div class="barra">
+      <span id="estado">Aún no hay app</span>
+      <button id="copiar" disabled>Copiar código</button>
+      <button id="abrir" disabled>Abrir en pantalla completa</button>
+    </div>
+    <iframe id="vista" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="Vista previa"></iframe>
+  </section>
+</main>
+<script>
+const SUPABASE_URL = "https://fmimdflqozqgyhsfztdk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RqqoIbH9FiqOPHWFAZXK4Q_aMmZ3dbo";
+const FUNC = SUPABASE_URL + "/functions/v1/generar-app";
+
+let codigo = "";
+const $ = (id) => document.getElementById(id);
+const chat = $("chat"), idea = $("idea"), enviar = $("enviar"), vista = $("vista");
+
+function burbuja(texto, clase) {
+  const d = document.createElement("div");
+  d.className = "msg " + clase;
+  d.textContent = texto;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d;
+}
+function mostrar(html) {
+  codigo = html;
+  vista.srcdoc = html;
+  $("copiar").disabled = $("abrir").disabled = false;
+  enviar.textContent = "Aplicar cambio";
+  idea.placeholder = "Pide un cambio: Ej. ponle el fondo rojo y agrega quesadillas";
+  try { localStorage.setItem("fabrica_ultima", html); } catch (e) {}
+}
+
+async function generar() {
+  const texto = idea.value.trim();
+  if (texto.length < 5) { idea.focus(); return; }
+  burbuja(texto, "yo");
+  idea.value = "";
+  enviar.disabled = true;
+  const espera = burbuja(codigo ? "Aplicando tu cambio… (20 a 60 segundos)" : "Construyendo tu app… (20 a 60 segundos)", "ia");
+  const t0 = Date.now();
+  try {
+    const r = await fetch(FUNC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
+      body: JSON.stringify({ idea: texto, codigo_actual: codigo || undefined }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.html) throw new Error(d.error || "Error " + r.status);
+    mostrar(d.html);
+    const seg = Math.round((Date.now() - t0) / 1000);
+    espera.textContent = "✅ ¡Listo en " + seg + " s! Mírala a la derecha (o abajo). Si quieres cambios, escríbelos.";
+    $("estado").textContent = "Hecha con " + d.modelo;
+  } catch (e) {
+    espera.textContent = "⚠️ " + e.message;
+    espera.classList.add("err");
+  } finally {
+    enviar.disabled = false;
+  }
+}
+
+enviar.onclick = generar;
+idea.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generar(); });
+document.querySelectorAll("[data-e]").forEach((b) => b.onclick = () => { idea.value = b.dataset.e; idea.focus(); });
+
+$("copiar").onclick = async () => {
+  try { await navigator.clipboard.writeText(codigo); $("copiar").textContent = "¡Copiado!"; }
+  catch (e) { $("copiar").textContent = "No se pudo copiar"; }
+  setTimeout(() => $("copiar").textContent = "Copiar código", 1800);
+};
+$("abrir").onclick = () => {
+  const url = URL.createObjectURL(new Blob([codigo], { type: "text/html" }));
+  window.open(url, "_blank");
+};
+$("nuevo").onclick = () => {
+  codigo = ""; vista.srcdoc = "";
+  $("copiar").disabled = $("abrir").disabled = true;
+  $("estado").textContent = "Aún no hay app";
+  enviar.textContent = "Crear app";
+  chat.innerHTML = "";
+  burbuja("Empecemos una app nueva. ¿Qué quieres crear?", "ia");
+};
+
+try {
+  const ultima = localStorage.getItem("fabrica_ultima");
+  if (ultima) { mostrar(ultima); burbuja("Recuperé tu última app. Puedes seguir pidiendo cambios o tocar «Nuevo».", "ia"); }
+} catch (e) {}
+</script>
+</body>
+</html>
