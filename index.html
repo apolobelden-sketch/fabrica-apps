@@ -75,9 +75,15 @@ function burbuja(texto, clase) {
   chat.scrollTop = chat.scrollHeight;
   return d;
 }
+// La vista previa está aislada por seguridad y no permite guardar datos;
+// este ayudante le da a la app una memoria temporal para que funcione igual.
+const AYUDANTE = "<script>(function(){try{window.localStorage.getItem('x');}catch(e){var m={};var s={getItem:function(k){return Object.prototype.hasOwnProperty.call(m,k)?m[k]:null},setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},key:function(i){return Object.keys(m)[i]||null},get length(){return Object.keys(m).length}};try{Object.defineProperty(window,'localStorage',{value:s,configurable:true});}catch(_){}try{Object.defineProperty(window,'sessionStorage',{value:s,configurable:true});}catch(_){}}})();<\/script>";
+function paraVista(html) {
+  return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + AYUDANTE) : AYUDANTE + html;
+}
 function mostrar(html) {
   codigo = html;
-  vista.srcdoc = html;
+  vista.srcdoc = paraVista(html);
   $("copiar").disabled = $("abrir").disabled = false;
   enviar.textContent = "Aplicar cambio";
   idea.placeholder = "Pide un cambio: Ej. ponle el fondo rojo y agrega quesadillas";
