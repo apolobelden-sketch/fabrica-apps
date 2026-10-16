@@ -35,6 +35,9 @@ button:disabled{opacity:.5;cursor:wait}
 #pub .enlace{word-break:break-all;font-weight:600;color:var(--ac)}
 #pub small{color:var(--sub)}
 button.pubb{background:var(--ac);color:#fff}
+#qrBox{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+#qrImg{width:100%;max-width:320px;border-radius:12px;border:1px solid var(--bd);background:#fff}
+@media print{body *{visibility:hidden}#qrImg,#qrImg *{visibility:visible}#qrImg{position:fixed;top:0;left:0;width:100%;max-width:none;border:0}}
 </style>
 </head>
 <body>
@@ -46,7 +49,7 @@ button.pubb{background:var(--ac);color:#fff}
   <section class="col">
     <div id="chat"><div class="msg ia">¡Hola! Cuéntame qué app quieres. Por ejemplo: un menú para tu taquería, un catálogo de productos o un cuestionario para tus alumnos.</div></div>
     <div class="ejemplos">
-      <button data-e="Menú digital para una taquería con precios en pesos, categorías (tacos, bebidas, extras) y un botón para pedir por WhatsApp al 5215555555555">🌮 Menú taquería</button>
+      <button data-e="Menú digital para una taquería con precios en pesos, categorías (tacos, bebidas, extras) y un botón para pedir por WhatsApp (pon aquí tu número de 10 dígitos)">🌮 Menú taquería</button>
       <button data-e="Catálogo de productos para una tiendita con fotos con emojis, precio, buscador y carrito que manda el pedido por WhatsApp">🛍️ Catálogo</button>
       <button data-e="Juego de repaso de tablas de multiplicar para niños de primaria con puntos, sonido de acierto y nivel fácil, medio y difícil">✖️ Tablas</button>
       <button data-e="Agenda de citas para una barbería: elegir día, hora y servicio, y guardar la lista de citas">💈 Citas</button>
@@ -70,11 +73,17 @@ button.pubb{background:var(--ac);color:#fff}
         <a class="enlace" id="pubUrl" target="_blank" rel="noopener"></a>
         <div class="fila"><button id="copiarUrl">Copiar enlace</button><a id="waUrl" target="_blank" rel="noopener"><button type="button">Compartir por WhatsApp</button></a></div>
         <small>Si le haces cambios a la app y vuelves a tocar «Publicar», se actualiza en este mismo enlace.</small>
+        <div id="qrBox">
+          <img id="qrImg" alt="Código QR para pedir por WhatsApp">
+          <small id="qrNota">📱 Mantén presionada la imagen para <b>guardarla</b> o <b>compartirla</b> por WhatsApp. El QR no cambia aunque actualices la app.</small>
+          <button id="imprimirQr" type="button">🖨️ Imprimir QR</button>
+        </div>
       </div>
     </div>
     <iframe id="vista" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="Vista previa"></iframe>
   </section>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 const SUPABASE_URL = "https://fmimdflqozqgyhsfztdk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_RqqoIbH9FiqOPHWFAZXK4Q_aMmZ3dbo";
@@ -160,10 +169,52 @@ function mostrarEnlace(p, actualizada) {
   $("pubMsg").textContent = actualizada ? "¡Listo! Se actualizó tu app en el mismo enlace." : "¡Tu app ya está en línea!";
   $("pubUrl").href = p.url; $("pubUrl").textContent = p.url;
   $("waUrl").href = "https://wa.me/?text=" + encodeURIComponent("Mira mi app: " + p.url);
+  dibujarQr(p);
 }
+
+// Tarjeta con código QR: nombre del negocio + QR + leyenda, como imagen para guardar o imprimir
+function dibujarQr(p) {
+  const img = $("qrImg");
+  if (typeof qrcode !== "function") {
+    img.hidden = true; $("imprimirQr").hidden = true;
+    $("qrNota").textContent = "No se pudo cargar el generador de QR. Revisa tu conexión y vuelve a tocar «Publicar».";
+    return;
+  }
+  const qr = qrcode(0, "M");
+  qr.addData(p.url);
+  qr.make();
+  const n = qr.getModuleCount();
+  const W = 900, celda = Math.floor(640 / (n + 8)), lado = celda * (n + 8);
+  const H = 300 + lado + 170;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#0f7a5c"; x.fillRect(0, 0, W, 22);
+  x.textAlign = "center"; x.fillStyle = "#1d2420";
+  const titulo = (p.nombre || "Mi negocio").slice(0, 40);
+  let tam = 64; x.font = "bold " + tam + "px system-ui, sans-serif";
+  while (x.measureText(titulo).width > W - 80 && tam > 30) { tam -= 4; x.font = "bold " + tam + "px system-ui, sans-serif"; }
+  x.fillText(titulo, W / 2, 130);
+  x.font = "600 40px system-ui, sans-serif"; x.fillStyle = "#0f7a5c";
+  x.fillText("Escanea y pide por WhatsApp", W / 2, 205);
+  const ox = Math.round((W - lado) / 2), oy = 250;
+  x.fillStyle = "#000000";
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++)
+    if (qr.isDark(r, k)) x.fillRect(ox + (k + 4) * celda, oy + (r + 4) * celda, celda, celda);
+  x.fillStyle = "#1d2420"; x.font = "32px system-ui, sans-serif";
+  x.fillText("📷 Abre la cámara de tu celular y apunta al código", W / 2, oy + lado + 60);
+  x.fillStyle = "#66706a"; x.font = "24px system-ui, sans-serif";
+  const corto = p.url.replace(/^https?:\/\//, "");
+  x.fillText(corto.length > 70 ? corto.slice(0, 67) + "…" : corto, W / 2, oy + lado + 115);
+  img.src = c.toDataURL("image/png");
+  img.hidden = false; $("imprimirQr").hidden = false;
+}
+$("imprimirQr").onclick = () => window.print();
 $("publicar").onclick = () => {
   $("pub").hidden = false;
   $("pubRes").hidden = true;
+  if (publicada) { mostrarEnlace(publicada, false); $("pubMsg").textContent = "Esta app ya está publicada. Si le hiciste cambios, toca «Actualizar»."; }
   $("nombreApp").value = publicada?.nombre || "";
   $("confirmarPub").textContent = publicada ? "Actualizar app publicada" : "Publicar ahora";
   $("nombreApp").focus();
