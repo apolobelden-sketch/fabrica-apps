@@ -37,10 +37,14 @@ button:disabled{opacity:.5;cursor:wait}
 #pub small{color:var(--sub)}
 button.pubb{background:var(--ac);color:#fff}
 .fotoBtn{display:inline-flex;align-items:center;border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx)}
-#fotoSel{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px;font-size:.85rem}
-#fotoSel img{width:52px;height:52px;object-fit:cover;border-radius:8px}
-#fotoSel span{flex:1;min-width:0}
-#fotoSel button{padding:6px 10px;font-size:.8rem}
+#fotoSel{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px;font-size:.85rem}
+#fotoLista{display:flex;gap:8px;flex-wrap:wrap}
+.miniF{position:relative;width:60px;height:60px}
+.miniF img{width:60px;height:60px;object-fit:cover;border-radius:8px;display:block}
+.miniF button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;padding:0;border-radius:50%;font-size:.75rem;line-height:22px;background:var(--tx);color:var(--bg)}
+.fotoInfo{display:flex;align-items:center;gap:8px}
+.fotoInfo span{flex:1;min-width:0}
+.fotoInfo button{padding:6px 10px;font-size:.8rem}
 #qrBox{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 #qrImg{width:100%;max-width:320px;border-radius:12px;border:1px solid var(--bd);background:#fff}
 @media print{body *{visibility:hidden}#qrImg,#qrImg *{visibility:visible}#qrImg{position:fixed;top:0;left:0;width:100%;max-width:none;border:0}}
@@ -61,10 +65,13 @@ button.pubb{background:var(--ac);color:#fff}
       <button data-e="Agenda de citas para una barbería: elegir día, hora y servicio, y guardar la lista de citas">💈 Citas</button>
     </div>
     <textarea id="idea" placeholder="Ej.: Quiero una app para llevar el control de mis ventas del día..."></textarea>
-    <div id="fotoSel" hidden><img id="fotoMini" alt="Foto del menú"><span>📷 Foto del menú lista. La IA leerá los productos y precios.</span><button id="quitarFoto" type="button">Quitar</button></div>
+    <div id="fotoSel" hidden>
+      <div id="fotoLista"></div>
+      <div class="fotoInfo"><span id="fotoTxt"></span><button id="quitarFoto" type="button">Quitar todas</button></div>
+    </div>
     <div class="fila">
-      <label class="fotoBtn" for="foto">📷 Foto del menú</label>
-      <input id="foto" type="file" accept="image/*" hidden>
+      <label class="fotoBtn" for="foto">📷 Fotos (hasta 5)</label>
+      <input id="foto" type="file" accept="image/*" multiple hidden>
       <button class="prim" id="enviar">Crear app</button>
     </div>
   </section>
@@ -128,8 +135,9 @@ function mostrar(html) {
   try { localStorage.setItem("fabrica_ultima", html); } catch (e) {}
 }
 
-// ---- Foto del menú: se reduce en el celular antes de enviarla ----
-let fotoDatos = "";
+// ---- Fotos del menú o platillos (hasta 5): se reducen en el celular antes de enviarlas ----
+const MAX_FOTOS = 5;
+let fotos = [];
 function reducirFoto(archivo) {
   return new Promise((ok, mal) => {
     const lector = new FileReader();
@@ -138,52 +146,67 @@ function reducirFoto(archivo) {
       const im = new Image();
       im.onerror = () => mal(new Error("Ese archivo no es una foto válida."));
       im.onload = () => {
-        const max = 1600, f = Math.min(1, max / Math.max(im.width, im.height));
+        const max = 1400, f = Math.min(1, max / Math.max(im.width, im.height));
         const c = document.createElement("canvas");
         c.width = Math.round(im.width * f); c.height = Math.round(im.height * f);
         c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-        ok(c.toDataURL("image/jpeg", 0.82));
+        ok(c.toDataURL("image/jpeg", 0.8));
       };
       im.src = lector.result;
     };
     lector.readAsDataURL(archivo);
   });
 }
+function pintarFotos() {
+  const lista = $("fotoLista");
+  lista.innerHTML = "";
+  fotos.forEach((src, i) => {
+    const d = document.createElement("div"); d.className = "miniF";
+    const im = document.createElement("img"); im.src = src; im.alt = "Foto " + (i + 1);
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "✕"; x.title = "Quitar esta foto";
+    x.onclick = () => { fotos.splice(i, 1); pintarFotos(); };
+    d.append(im, x); lista.append(d);
+  });
+  $("fotoSel").hidden = fotos.length === 0;
+  $("fotoTxt").textContent = fotos.length + (fotos.length === 1 ? " foto lista." : " fotos listas.") +
+    " La IA juntará todo en un solo menú." + (fotos.length < MAX_FOTOS ? " Puedes agregar más." : "");
+}
 $("foto").onchange = async (e) => {
-  const a = e.target.files && e.target.files[0];
-  if (!a) return;
-  try {
-    fotoDatos = await reducirFoto(a);
-    $("fotoMini").src = fotoDatos;
-    $("fotoSel").hidden = false;
-    if (!idea.value.trim()) idea.placeholder = "Opcional: agrega detalles. Ej.: Tacos El Güero, pedidos al 6311234567, solo para recoger";
-  } catch (err) {
-    burbuja("⚠️ " + err.message, "ia err");
-  }
+  const archivos = Array.from(e.target.files || []);
   e.target.value = "";
+  if (!archivos.length) return;
+  const libres = MAX_FOTOS - fotos.length;
+  if (archivos.length > libres) burbuja("⚠️ Máximo " + MAX_FOTOS + " fotos. Solo agregué " + Math.max(libres, 0) + ".", "ia err");
+  for (const a of archivos.slice(0, Math.max(libres, 0))) {
+    try { fotos.push(await reducirFoto(a)); }
+    catch (err) { burbuja("⚠️ " + err.message, "ia err"); }
+  }
+  pintarFotos();
+  if (fotos.length && !idea.value.trim()) idea.placeholder = "Opcional: agrega detalles. Ej.: Tacos El Güero, pedidos al 6311234567, solo para recoger";
 };
-$("quitarFoto").onclick = () => { fotoDatos = ""; $("fotoSel").hidden = true; };
+$("quitarFoto").onclick = () => { fotos = []; pintarFotos(); };
 
 async function generar() {
   let texto = idea.value.trim();
-  if (fotoDatos && texto.length < 5) texto = "Menú digital de este negocio con pedido por WhatsApp";
+  if (fotos.length && texto.length < 5) texto = "Menú digital de este negocio con pedido por WhatsApp";
   if (texto.length < 5) { idea.focus(); return; }
-  burbuja((fotoDatos ? "📷 " : "") + texto, "yo");
-  const foto = fotoDatos;
+  burbuja((fotos.length ? "📷×" + fotos.length + " " : "") + texto, "yo");
+  const foto = fotos.slice();
   idea.value = "";
   enviar.disabled = true;
-  const espera = burbuja(foto ? "Leyendo la foto del menú y armando la app… (20 a 60 segundos)" : codigo ? "Aplicando tu cambio… (20 a 60 segundos)" : "Construyendo tu app… (20 a 60 segundos)", "ia");
+  const espera = burbuja(foto.length ? "Leyendo " + (foto.length === 1 ? "la foto" : "las " + foto.length + " fotos") + " y armando la app… (20 a 90 segundos)" : codigo ? "Aplicando tu cambio… (20 a 60 segundos)" : "Construyendo tu app… (20 a 60 segundos)", "ia");
   const t0 = Date.now();
   try {
     const r = await fetch(FUNC, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
-      body: JSON.stringify({ idea: texto, codigo_actual: codigo || undefined, imagen: foto || undefined }),
+      body: JSON.stringify({ idea: texto, codigo_actual: codigo || undefined, imagenes: foto.length ? foto : undefined }),
     });
     const d = await r.json();
-    if (!r.ok || !d.html) throw new Error(d.error || "Error " + r.status);
-    if (foto) { fotoDatos = ""; $("fotoSel").hidden = true; }
-    if (d.menu_foto) burbuja("📋 Esto leí en la foto (revisa que los precios estén bien):\n" + d.menu_foto, "ia");
+    if (!r.ok || !d.html) throw new Error((d.error || "Error " + r.status) + (d.avisos && d.avisos.length ? "\n" + d.avisos.join("\n") : ""));
+    if (foto.length) { fotos = []; pintarFotos(); }
+    if (d.menu_foto) burbuja("📋 Esto leí en las fotos (revisa que los productos y precios estén bien):\n" + d.menu_foto, "ia");
+    if (d.avisos && d.avisos.length) burbuja("⚠️ " + d.avisos.join("\n"), "ia err");
     mostrar(d.html);
     const seg = Math.round((Date.now() - t0) / 1000);
     espera.textContent = "✅ Listo en " + seg + " s." + (d.resumen ? "\n" + d.resumen : "") +
