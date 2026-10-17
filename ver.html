@@ -30,9 +30,17 @@ a{color:#0f7a5c}
     const r = await fetch(FUNC + "?a=" + encodeURIComponent(slug), { headers: { apikey: KEY } });
     const d = await r.json();
     if (!r.ok || !d.html) return fallo(d.error || "No se pudo cargar la app.");
+    // Al reescribir la página, el navegador ya no avisa "DOMContentLoaded" ni "load",
+    // y muchas apps esperan esos avisos para dibujarse. Se anotan si llegan y, si no, se envían.
+    const AVISOS = "<script>window.__fbDcl=false;window.__fbLoad=false;document.addEventListener('DOMContentLoaded',function(){window.__fbDcl=true});window.addEventListener('load',function(){window.__fbLoad=true});<\/script>";
+    const html = /<head[^>]*>/i.test(d.html) ? d.html.replace(/<head[^>]*>/i, (m) => m + AVISOS) : AVISOS + d.html;
     document.open();
-    document.write(d.html);
+    document.write(html);
     document.close();
+    setTimeout(() => {
+      if (!window.__fbDcl) document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true }));
+      setTimeout(() => { if (!window.__fbLoad) window.dispatchEvent(new Event("load")); }, 50);
+    }, 50);
   } catch (e) {
     fallo("No se pudo cargar la app. Revisa tu conexión e intenta de nuevo.");
   }
