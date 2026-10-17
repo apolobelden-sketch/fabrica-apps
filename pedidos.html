@@ -44,6 +44,10 @@ button,.btn{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weig
 .app{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;width:100%;text-align:left;color:var(--tx);font:inherit}
 .app small{display:block;color:var(--sub)}
 .enlace{word-break:break-all;font-size:.85rem;background:var(--bg);border-radius:8px;padding:8px;margin:8px 0}
+.herr{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.herr button{background:var(--card);border:1px solid var(--line);font-size:.9rem}
+.aviso{font-size:.85rem;color:var(--sub);margin:-4px 0 10px}
+@media print{header .acc,header button,.filtros,.herr,.aviso,.acc,#crearEnlace,#compartirCaja,#error{display:none!important}body{background:#fff;color:#000}.pedido,.t{border-color:#bbb;break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -72,6 +76,12 @@ button,.btn{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weig
       <div class="t"><b id="semT">$0</b><span>últimos 7 días</span></div>
     </div>
     <div id="masPedido" hidden><p class="sub" style="margin:0">Lo más pedido (30 días):</p><div class="top" id="top"></div></div>
+    <div class="herr">
+      <button id="exExcel">📥 Excel</button>
+      <button id="exPpt">📊 Reporte PowerPoint</button>
+      <button id="exPrint">🖨️ Imprimir / PDF</button>
+    </div>
+    <p class="aviso" id="avisoHerr" hidden></p>
     <div class="filtros">
       <button data-f="nuevo" aria-pressed="true">🆕 Nuevos</button>
       <button data-f="todos" aria-pressed="false">Todos</button>
@@ -99,7 +109,7 @@ const params = new URLSearchParams(location.search);
 let slug = (params.get("a") || "").replace(/[^a-z0-9-]/g, "");
 const claveNegocio = (location.hash.match(/k=([a-f0-9]{16,64})/) || [])[1] || "";
 let claveFabrica = ls.get("fabrica_clave") || "";
-let pedidos = [], filtro = "nuevo";
+let pedidos = [], filtro = "nuevo", nombreApp = "";
 
 function headers() {
   const h = { "Content-Type": "application/json" };
@@ -146,11 +156,25 @@ async function verPanel() {
   $("volver").hidden = !!claveNegocio;
   $("crearEnlace").hidden = !!claveNegocio;
   const d = await llamar("lista", { slug, dias: 30 });
-  pedidos = d.pedidos;
+  pedidos = d.pedidos; nombreApp = d.nombre;
   $("titulo").textContent = "📋 " + d.nombre;
   $("subtitulo").textContent = d.visitas + " visitas a la app · pedidos de los últimos 30 días";
   document.title = "Pedidos · " + d.nombre;
   pintar();
+}
+// Lo más pedido: líneas tipo "2x Taco", "2 x Taco", "- Taco x2", "Taco: 2 piezas"
+function masPedido(lista) {
+  const cuenta = {};
+  for (const p of lista) for (const l of String(p.texto).split("\n")) {
+    let m = l.match(/^\s*[-•*·]?\s*(\d{1,3})\s*[x×]\s*([^$\n(]{2,40})/i) || null, n, nom;
+    if (m) { n = +m[1]; nom = m[2]; }
+    else if ((m = l.match(/^\s*[-•*·]\s*([^$\n(]{2,40}?)\s*[x×]\s*(\d{1,3})\b/i))) { n = +m[2]; nom = m[1]; }
+    else if ((m = l.match(/^\s*[-•*·]?\s*([^:$\n(]{2,40}?)\s*:\s*(\d{1,3})\s*(?:pieza|piezas|pza|pzas|pz|unidad|unidades|orden|[oó]rdenes)\b/i))) { n = +m[2]; nom = m[1]; }
+    if (!nom) continue;
+    nom = nom.replace(/[*_~:\-–]+\s*$/, "").trim().toLowerCase();
+    if (nom) cuenta[nom] = (cuenta[nom] || 0) + n;
+  }
+  return Object.entries(cuenta).sort((a, b) => b[1] - a[1]);
 }
 function pintar() {
   const ahora = new Date(), inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
@@ -160,18 +184,7 @@ function pintar() {
   $("hoyN").textContent = hoy.length;
   $("hoyT").textContent = peso(hoy.reduce((s, p) => s + Number(p.total || 0), 0));
   $("semT").textContent = peso(semana.reduce((s, p) => s + Number(p.total || 0), 0));
-  // Lo más pedido: líneas tipo "2x Taco", "2 x Taco", "- Taco x2"
-  const cuenta = {};
-  for (const p of validos) for (const l of String(p.texto).split("\n")) {
-    let m = l.match(/^\s*[-•*·]?\s*(\d{1,3})\s*[x×]\s*([^$\n(]{2,40})/i) || null, n, nom;
-    if (m) { n = +m[1]; nom = m[2]; }
-    else if ((m = l.match(/^\s*[-•*·]\s*([^$\n(]{2,40}?)\s*[x×]\s*(\d{1,3})\b/i))) { n = +m[2]; nom = m[1]; }
-    else if ((m = l.match(/^\s*[-•*·]?\s*([^:$\n(]{2,40}?)\s*:\s*(\d{1,3})\s*(?:pieza|piezas|pza|pzas|pz|unidad|unidades|orden|[oó]rdenes)\b/i))) { n = +m[2]; nom = m[1]; }
-    if (!nom) continue;
-    nom = nom.replace(/[*_~:\-–]+\s*$/, "").trim().toLowerCase();
-    if (nom) cuenta[nom] = (cuenta[nom] || 0) + n;
-  }
-  const top = Object.entries(cuenta).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const top = masPedido(validos).slice(0, 6);
   $("masPedido").hidden = !top.length;
   $("top").innerHTML = top.map(([n, c]) => `<span>${esc(n)} · <b>${c}</b></span>`).join("");
 
@@ -217,6 +230,121 @@ function mostrarEnlace(clave) {
   $("compartirCaja").hidden = false;
   $("copiarEnlace").onclick = async () => { try { await navigator.clipboard.writeText(url); $("copiarEnlace").textContent = "✅ Copiado"; } catch (e) {} };
 }
+
+// ---------- Herramientas: Excel, PowerPoint e impresión ----------
+const LIBS = {
+  xlsx: { url: "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js", global: "XLSX" },
+  pptx: { url: "https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js", global: "PptxGenJS" },
+};
+function cargar(lib) {
+  const L = LIBS[lib];
+  if (window[L.global]) return Promise.resolve(window[L.global]);
+  return new Promise((ok, mal) => {
+    const s = document.createElement("script");
+    s.src = L.url; s.async = true;
+    s.onload = () => window[L.global] ? ok(window[L.global]) : mal(new Error("No cargó la herramienta"));
+    s.onerror = () => mal(new Error("No se pudo descargar la herramienta. Revisa tu internet."));
+    document.head.appendChild(s);
+  });
+}
+function avisoHerr(t) { $("avisoHerr").textContent = t; $("avisoHerr").hidden = !t; }
+const fechaCorta = (d) => new Date(d).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+const horaCorta = (d) => new Date(d).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+const nombreArchivo = (tipo, ext) => `${tipo}-${(slug || "app").slice(0, 40)}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+function ventasPorDia(validos, dias = 14) {
+  const mapa = {};
+  for (let i = dias - 1; i >= 0; i--) { const d = new Date(Date.now() - i * 86400_000); mapa[d.toISOString().slice(0, 10)] = { n: 0, t: 0, etiqueta: d.toLocaleDateString("es-MX", { day: "numeric", month: "short" }) }; }
+  for (const p of validos) {
+    const k = new Date(new Date(p.creado).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    if (mapa[k]) { mapa[k].n++; mapa[k].t += Number(p.total || 0); }
+  }
+  return Object.values(mapa);
+}
+
+$("exExcel").onclick = async () => {
+  if (!pedidos.length) return avisoHerr("Todavía no hay pedidos para descargar.");
+  const b = $("exExcel"); b.disabled = true; avisoHerr("Preparando el Excel…");
+  try {
+    const XLSX = await cargar("xlsx");
+    const filas = pedidos.map((p) => ({ Fecha: fechaCorta(p.creado), Hora: horaCorta(p.creado), Estado: p.estado, Total: p.total != null ? Number(p.total) : "", Pedido: String(p.texto) }));
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    hoja["!cols"] = [{ wch: 11 }, { wch: 7 }, { wch: 10 }, { wch: 9 }, { wch: 60 }];
+    const validos = pedidos.filter((p) => p.estado !== "cancelado");
+    const resumen = [
+      { Concepto: "Negocio", Valor: nombreApp },
+      { Concepto: "Pedidos (sin cancelados)", Valor: validos.length },
+      { Concepto: "Total vendido", Valor: validos.reduce((s, p) => s + Number(p.total || 0), 0) },
+      { Concepto: "Pedidos cancelados", Valor: pedidos.length - validos.length },
+      { Concepto: "", Valor: "" },
+      ...masPedido(validos).slice(0, 15).map(([n, c]) => ({ Concepto: "Más pedido: " + n, Valor: c })),
+    ];
+    const hojaR = XLSX.utils.json_to_sheet(resumen); hojaR["!cols"] = [{ wch: 34 }, { wch: 16 }];
+    const dias = XLSX.utils.json_to_sheet(ventasPorDia(validos, 30).map((d) => ({ Día: d.etiqueta, Pedidos: d.n, Vendido: d.t })));
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Pedidos");
+    XLSX.utils.book_append_sheet(libro, hojaR, "Resumen");
+    XLSX.utils.book_append_sheet(libro, dias, "Ventas por día");
+    XLSX.writeFile(libro, nombreArchivo("pedidos", "xlsx"));
+    avisoHerr("✅ Listo, revisa tus descargas.");
+  } catch (e) { avisoHerr("⚠️ " + e.message); }
+  b.disabled = false;
+};
+
+$("exPpt").onclick = async () => {
+  if (!pedidos.length) return avisoHerr("Todavía no hay pedidos para hacer el reporte.");
+  const b = $("exPpt"); b.disabled = true; avisoHerr("Armando la presentación…");
+  try {
+    const PptxGenJS = await cargar("pptx");
+    const validos = pedidos.filter((p) => p.estado !== "cancelado");
+    const total = validos.reduce((s, p) => s + Number(p.total || 0), 0);
+    const conTotal = validos.filter((p) => p.total != null).length;
+    const VERDE = "0F7A5C", GRIS = "66706A";
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    pptx.title = "Reporte de ventas · " + nombreApp;
+    // 1. Portada
+    let s = pptx.addSlide(); s.background = { color: VERDE };
+    s.addText(nombreApp, { x: 0.6, y: 2.2, w: 12, h: 1.2, fontSize: 44, bold: true, color: "FFFFFF" });
+    s.addText("Reporte de ventas · últimos 30 días", { x: 0.6, y: 3.4, w: 12, h: 0.6, fontSize: 22, color: "E9F4EF" });
+    s.addText("Generado el " + new Date().toLocaleDateString("es-MX", { dateStyle: "long" }), { x: 0.6, y: 6.4, w: 12, h: 0.4, fontSize: 14, color: "E9F4EF" });
+    // 2. Números clave
+    s = pptx.addSlide();
+    s.addText("Resumen", { x: 0.6, y: 0.4, w: 12, h: 0.8, fontSize: 32, bold: true, color: VERDE });
+    const datos = [["Pedidos", String(validos.length)], ["Vendido", peso(total)], ["Ticket promedio", conTotal ? peso(total / conTotal) : "—"], ["Cancelados", String(pedidos.length - validos.length)]];
+    datos.forEach(([t, v], i) => {
+      const x = 0.6 + i * 3.1;
+      s.addShape(pptx.ShapeType.roundRect, { x, y: 1.8, w: 2.8, h: 2.2, fill: { color: "E9F4EF" }, line: { color: "E9F4EF" }, rectRadius: 0.15 });
+      s.addText(v, { x, y: 2.1, w: 2.8, h: 1, fontSize: 30, bold: true, color: VERDE, align: "center" });
+      s.addText(t, { x, y: 3.1, w: 2.8, h: 0.6, fontSize: 16, color: GRIS, align: "center" });
+    });
+    // 3. Ventas por día
+    const porDia = ventasPorDia(validos, 14);
+    s = pptx.addSlide();
+    s.addText("Ventas por día (últimos 14 días)", { x: 0.6, y: 0.4, w: 12, h: 0.8, fontSize: 28, bold: true, color: VERDE });
+    s.addChart(pptx.ChartType.bar, [{ name: "Vendido", labels: porDia.map((d) => d.etiqueta), values: porDia.map((d) => d.t) }],
+      { x: 0.6, y: 1.4, w: 12, h: 5.6, chartColors: [VERDE], showValue: false, catAxisLabelFontSize: 11, valAxisLabelFontSize: 11, valAxisLabelFormatCode: "$#,##0" });
+    // 4. Lo más pedido
+    const top = masPedido(validos).slice(0, 8);
+    if (top.length) {
+      s = pptx.addSlide();
+      s.addText("Lo más pedido", { x: 0.6, y: 0.4, w: 12, h: 0.8, fontSize: 28, bold: true, color: VERDE });
+      const alReves = top.slice().reverse(); // en barras horizontales el primero queda abajo; así el más pedido queda arriba
+      s.addChart(pptx.ChartType.bar, [{ name: "Piezas", labels: alReves.map(([n]) => n), values: alReves.map(([, c]) => c) }],
+        { x: 0.6, y: 1.4, w: 12, h: 5.6, barDir: "bar", chartColors: [VERDE], showValue: true, dataLabelFontSize: 12, catAxisLabelFontSize: 13 });
+    }
+    // 5. Últimos pedidos
+    s = pptx.addSlide();
+    s.addText("Últimos pedidos", { x: 0.6, y: 0.4, w: 12, h: 0.8, fontSize: 28, bold: true, color: VERDE });
+    const filas = [[{ text: "Fecha", options: { bold: true, fill: { color: "E9F4EF" } } }, { text: "Estado", options: { bold: true, fill: { color: "E9F4EF" } } }, { text: "Total", options: { bold: true, fill: { color: "E9F4EF" } } }, { text: "Pedido", options: { bold: true, fill: { color: "E9F4EF" } } }]];
+    pedidos.slice(0, 8).forEach((p) => filas.push([fechaCorta(p.creado) + " " + horaCorta(p.creado), p.estado, p.total != null ? peso(p.total) : "", String(p.texto).replace(/\s+/g, " ").slice(0, 110)]));
+    s.addTable(filas, { x: 0.6, y: 1.4, w: 12.1, colW: [2.2, 1.4, 1.4, 7.1], fontSize: 11, border: { type: "solid", pt: 0.5, color: "DFE3DD" }, valign: "middle" });
+    await pptx.writeFile({ fileName: nombreArchivo("reporte", "pptx") });
+    avisoHerr("✅ Listo, revisa tus descargas.");
+  } catch (e) { avisoHerr("⚠️ " + e.message); }
+  b.disabled = false;
+};
+
+$("exPrint").onclick = () => { filtro = "todos"; document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.f === "todos"))); pintar(); setTimeout(() => window.print(), 150); };
 
 // Revisa pedidos nuevos cada 30 segundos mientras la página está abierta
 setInterval(() => { if (slug && !document.hidden && !$("panel").hidden) verPanel().catch(() => {}); }, 30000);
