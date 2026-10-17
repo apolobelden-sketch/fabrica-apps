@@ -53,7 +53,7 @@ button.pubb{background:var(--ac);color:#fff}
 <body>
 <header>
   <div><h1>🏭 Fábrica de Apps</h1><small>Escribe tu idea y la IA te arma la app</small></div>
-  <button id="nuevo">Nuevo</button>
+  <div class="fila"><button id="deshacer" disabled title="Regresar a la versión anterior">↩️ Deshacer</button><button id="nuevo">Nuevo</button></div>
 </header>
 <main>
   <section class="col">
@@ -125,7 +125,15 @@ const AYUDANTE = "<script>(function(){try{window.localStorage.getItem('x');}catc
 function paraVista(html) {
   return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + AYUDANTE) : AYUDANTE + html;
 }
-function mostrar(html) {
+// ---- Historial para "Deshacer" (últimas 10 versiones) ----
+let historial = [];
+try { historial = JSON.parse(localStorage.getItem("fabrica_historial") || "[]"); } catch (e) {}
+function guardarHistorial() {
+  try { localStorage.setItem("fabrica_historial", JSON.stringify(historial.slice(-10))); } catch (e) {}
+  $("deshacer").disabled = historial.length === 0;
+}
+function mostrar(html, sinHistorial) {
+  if (!sinHistorial && codigo && codigo !== html) { historial.push(codigo); historial = historial.slice(-10); guardarHistorial(); }
   codigo = html;
   vista.srcdoc = paraVista(html);
   $("copiar").disabled = $("abrir").disabled = $("publicar").disabled = false;
@@ -182,13 +190,17 @@ $("foto").onchange = async (e) => {
     catch (err) { burbuja("⚠️ " + err.message, "ia err"); }
   }
   pintarFotos();
-  if (fotos.length && !idea.value.trim()) idea.placeholder = "Opcional: agrega detalles. Ej.: Tacos El Güero, pedidos al 6311234567, solo para recoger";
+  if (fotos.length && !idea.value.trim()) idea.placeholder = codigo
+    ? "Opcional: di de qué es la foto. Ej.: esta foto es de los tacos al pastor"
+    : "Opcional: agrega detalles. Ej.: Tacos El Güero, pedidos al 6311234567, solo para recoger";
 };
 $("quitarFoto").onclick = () => { fotos = []; pintarFotos(); };
 
 async function generar() {
   let texto = idea.value.trim();
-  if (fotos.length && texto.length < 5) texto = "Menú digital de este negocio con pedido por WhatsApp";
+  if (fotos.length && texto.length < 5) texto = codigo
+    ? "Agrega lo de estas fotos al menú actual sin quitar nada"
+    : "Menú digital de este negocio con pedido por WhatsApp";
   if (texto.length < 5) { idea.focus(); return; }
   burbuja((fotos.length ? "📷×" + fotos.length + " " : "") + texto, "yo");
   const foto = fotos.slice();
@@ -322,7 +334,15 @@ $("copiarUrl").onclick = async () => {
   setTimeout(() => $("copiarUrl").textContent = "Copiar enlace", 2000);
 };
 
+$("deshacer").onclick = () => {
+  if (!historial.length) return;
+  const anterior = historial.pop(); guardarHistorial();
+  mostrar(anterior, true);
+  burbuja("↩️ Regresé a la versión anterior de tu app." + (historial.length ? " Puedes deshacer " + historial.length + " vez(ces) más." : ""), "ia");
+};
+
 $("nuevo").onclick = () => {
+  if (codigo) { historial.push(codigo); guardarHistorial(); }
   codigo = ""; vista.srcdoc = "";
   publicada = null; try { localStorage.removeItem("fabrica_publicada"); } catch (e) {}
   $("pub").hidden = true;
@@ -333,10 +353,27 @@ $("nuevo").onclick = () => {
   burbuja("Empecemos una app nueva. ¿Qué quieres crear?", "ia");
 };
 
-try {
-  const ultima = localStorage.getItem("fabrica_ultima");
-  if (ultima) { mostrar(ultima); burbuja("Recuperé tu última app. Puedes seguir pidiendo cambios o tocar «Nuevo».", "ia"); }
-} catch (e) {}
+guardarHistorial();
+// Abrir una app publicada para editarla: .../fabrica-apps/#editar=nombre-de-la-app
+const editar = (location.hash.match(/^#editar=([a-z0-9-]{1,60})$/) || [])[1];
+if (editar) {
+  const aviso = burbuja("Abriendo «" + editar + "» para editarla…", "ia");
+  fetch(PUB + "?a=" + editar, { headers: { apikey: SUPABASE_KEY } })
+    .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || !d.html) throw new Error(d.error || "No se encontró la app.");
+      mostrar(d.html);
+      publicada = null; try { localStorage.removeItem("fabrica_publicada"); } catch (e) {}
+      aviso.textContent = "✅ Abrí «" + d.nombre + "». Pide los cambios que quieras. Al publicar se creará un enlace nuevo con tus cambios.";
+      history.replaceState(null, "", location.pathname);
+    })
+    .catch((e) => { aviso.textContent = "⚠️ " + e.message; aviso.classList.add("err"); });
+} else {
+  try {
+    const ultima = localStorage.getItem("fabrica_ultima");
+    if (ultima) { mostrar(ultima, true); burbuja("Recuperé tu última app. Puedes seguir pidiendo cambios o tocar «Nuevo».", "ia"); }
+  } catch (e) {}
+}
 </script>
 </body>
 </html>
