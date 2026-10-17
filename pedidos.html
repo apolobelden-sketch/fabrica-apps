@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel de pedidos</title>
+<style>
+:root{--bg:#f5f6f2;--card:#fff;--tx:#1d2420;--sub:#66706a;--line:#dfe3dd;--ac:#0f7a5c;--ac2:#e9f4ef;--warn:#a16207;--warn2:#fef3c7;--bad:#b3261e;--bad2:#fde8e7}
+@media (prefers-color-scheme:dark){:root{--bg:#121614;--card:#1b201d;--tx:#e8ece9;--sub:#9aa59f;--line:#2c3430;--ac:#3fbf93;--ac2:#1f2d27;--warn:#fcd34d;--warn2:#3a2f12;--bad:#ff8a80;--bad2:#3b1515}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:720px;margin:0 auto;padding:0 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0 6px;flex-wrap:wrap}
+h1{margin:0;font-size:1.3rem}
+.sub{color:var(--sub);font-size:.9rem;margin:2px 0 0}
+button,.btn{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.prim{background:var(--ac);color:#fff}
+.tarjetas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.t{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.t b{display:block;font-size:1.35rem}
+.t span{color:var(--sub);font-size:.8rem}
+@media (max-width:420px){.t b{font-size:1.1rem}}
+.filtros{display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap}
+.filtros button[aria-pressed="true"]{background:var(--ac);color:#fff}
+.pedido{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.pedido.nuevo{border-left:5px solid var(--ac)}
+.pedido.cancelado{opacity:.6}
+.cab{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.hora{color:var(--sub);font-size:.85rem}
+.total{font-weight:800;font-size:1.1rem}
+.texto{white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:.95rem}
+.acc{display:flex;gap:8px;flex-wrap:wrap}
+.etq{font-size:.75rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--ac2);color:var(--ac)}
+.etq.atendido{background:var(--line);color:var(--sub)}
+.etq.cancelado{background:var(--bad2);color:var(--bad)}
+.caja{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.caja input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--tx);margin:8px 0}
+.error{color:var(--bad);font-weight:600}
+.vacio{text-align:center;color:var(--sub);padding:30px 10px}
+.top{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.top span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:.85rem}
+.app{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;width:100%;text-align:left;color:var(--tx);font:inherit}
+.app small{display:block;color:var(--sub)}
+.enlace{word-break:break-all;font-size:.85rem;background:var(--bg);border-radius:8px;padding:8px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="env">
+  <header>
+    <div><h1 id="titulo">📋 Panel de pedidos</h1><p class="sub" id="subtitulo">Pedidos que tus clientes mandan por WhatsApp</p></div>
+    <div style="display:flex;gap:8px"><button id="volver" hidden>← Mis apps</button><button id="actualizar" hidden>🔄 Actualizar</button></div>
+  </header>
+
+  <!-- Acceso del dueño de la Fábrica (cuando no hay enlace de negocio) -->
+  <div class="caja" id="acceso" hidden>
+    <b>🔒 Código de acceso de la Fábrica</b>
+    <input id="claveIn" autocomplete="off" autocapitalize="none" placeholder="xxxx-xxxx-xxxx">
+    <button class="prim" id="claveOk">Entrar</button>
+    <p class="sub">Si eres dueño de un negocio, abre el enlace que te mandaron; ese ya trae tu acceso.</p>
+  </div>
+
+  <!-- Lista de apps (solo dueño de la Fábrica) -->
+  <section id="apps" hidden></section>
+
+  <!-- Pedidos de un negocio -->
+  <section id="panel" hidden>
+    <div class="tarjetas">
+      <div class="t"><b id="hoyN">0</b><span>pedidos hoy</span></div>
+      <div class="t"><b id="hoyT">$0</b><span>vendido hoy</span></div>
+      <div class="t"><b id="semT">$0</b><span>últimos 7 días</span></div>
+    </div>
+    <div id="masPedido" hidden><p class="sub" style="margin:0">Lo más pedido (30 días):</p><div class="top" id="top"></div></div>
+    <div class="filtros">
+      <button data-f="nuevo" aria-pressed="true">🆕 Nuevos</button>
+      <button data-f="todos" aria-pressed="false">Todos</button>
+    </div>
+    <div id="lista"></div>
+    <div class="caja" id="compartirCaja" hidden>
+      <b>Enlace para el dueño del negocio</b>
+      <p class="sub">Con este enlace el negocio ve sus pedidos, pero no puede cambiar la app.</p>
+      <div class="enlace" id="enlaceNegocio"></div>
+      <div class="acc"><button id="copiarEnlace">📋 Copiar</button><a class="btn" id="waEnlace" target="_blank" rel="noopener">💬 Mandar por WhatsApp</a></div>
+    </div>
+    <button id="crearEnlace" hidden style="margin-top:6px">🔗 Crear enlace para el dueño del negocio</button>
+  </section>
+  <p class="error" id="error" hidden></p>
+</div>
+
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/pedidos";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const peso = (n) => "$" + Number(n || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+const params = new URLSearchParams(location.search);
+let slug = (params.get("a") || "").replace(/[^a-z0-9-]/g, "");
+const claveNegocio = (location.hash.match(/k=([a-f0-9]{16,64})/) || [])[1] || "";
+let claveFabrica = ls.get("fabrica_clave") || "";
+let pedidos = [], filtro = "nuevo";
+
+function headers() {
+  const h = { "Content-Type": "application/json" };
+  if (claveNegocio) h["x-pedidos-clave"] = claveNegocio; else if (claveFabrica) h["x-fabrica-clave"] = claveFabrica;
+  return h;
+}
+async function llamar(accion, cuerpo) {
+  const r = await fetch(FN + "?accion=" + accion, { method: "POST", headers: headers(), body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) {
+    if (!claveNegocio) { claveFabrica = ""; try { localStorage.removeItem("fabrica_clave"); } catch (e) {} pedirClave(); }
+    throw new Error(claveNegocio ? "Este enlace ya no es válido. Pide uno nuevo a quien te hizo la app." : "Código incorrecto.");
+  }
+  if (!r.ok) throw new Error(d.error || "Error " + r.status);
+  return d;
+}
+function mostrarError(m) { $("error").textContent = m; $("error").hidden = !m; }
+function pedirClave() { $("acceso").hidden = false; $("apps").hidden = true; $("panel").hidden = true; }
+
+$("claveOk").onclick = () => {
+  const v = $("claveIn").value.trim().toLowerCase();
+  if (v.length < 6) return;
+  claveFabrica = v; ls.set("fabrica_clave", v);
+  $("acceso").hidden = true; iniciar();
+};
+
+// ---------- Lista de apps (dueño de la Fábrica) ----------
+async function verApps() {
+  slug = ""; history.replaceState(null, "", location.pathname);
+  $("panel").hidden = true; $("volver").hidden = true; $("actualizar").hidden = false;
+  $("titulo").textContent = "📋 Pedidos de tus apps"; $("subtitulo").textContent = "Últimos 30 días";
+  const d = await llamar("apps");
+  const caja = $("apps"); caja.hidden = false;
+  caja.innerHTML = d.apps.length ? d.apps.map((a) => `<button class="app" data-s="${esc(a.slug)}">
+      <span><b>${esc(a.nombre)}</b><small>${a.pedidos_30d} pedidos · ${peso(a.total_30d)} · ${a.visitas} visitas</small></span>
+      ${a.nuevos ? `<span class="etq">${a.nuevos} nuevo${a.nuevos > 1 ? "s" : ""}</span>` : ""}</button>`).join("")
+    : `<p class="vacio">Todavía no has publicado apps.</p>`;
+  caja.querySelectorAll(".app").forEach((b) => b.onclick = () => { slug = b.dataset.s; history.replaceState(null, "", "?a=" + slug); verPanel(); });
+}
+
+// ---------- Pedidos de un negocio ----------
+async function verPanel() {
+  $("apps").hidden = true; $("panel").hidden = false; $("actualizar").hidden = false;
+  $("volver").hidden = !!claveNegocio;
+  $("crearEnlace").hidden = !!claveNegocio;
+  const d = await llamar("lista", { slug, dias: 30 });
+  pedidos = d.pedidos;
+  $("titulo").textContent = "📋 " + d.nombre;
+  $("subtitulo").textContent = d.visitas + " visitas a la app · pedidos de los últimos 30 días";
+  document.title = "Pedidos · " + d.nombre;
+  pintar();
+}
+function pintar() {
+  const ahora = new Date(), inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
+  const validos = pedidos.filter((p) => p.estado !== "cancelado");
+  const hoy = validos.filter((p) => new Date(p.creado).getTime() >= inicioHoy);
+  const semana = validos.filter((p) => new Date(p.creado).getTime() >= Date.now() - 7 * 86400_000);
+  $("hoyN").textContent = hoy.length;
+  $("hoyT").textContent = peso(hoy.reduce((s, p) => s + Number(p.total || 0), 0));
+  $("semT").textContent = peso(semana.reduce((s, p) => s + Number(p.total || 0), 0));
+  // Lo más pedido: líneas tipo "2x Taco", "2 x Taco", "- Taco x2"
+  const cuenta = {};
+  for (const p of validos) for (const l of String(p.texto).split("\n")) {
+    let m = l.match(/^\s*[-•*·]?\s*(\d{1,3})\s*[x×]\s*([^$\n(]{2,40})/i) || null, n, nom;
+    if (m) { n = +m[1]; nom = m[2]; }
+    else if ((m = l.match(/^\s*[-•*·]\s*([^$\n(]{2,40}?)\s*[x×]\s*(\d{1,3})\b/i))) { n = +m[2]; nom = m[1]; }
+    if (!nom) continue;
+    nom = nom.replace(/[*_~:\-–]+\s*$/, "").trim().toLowerCase();
+    if (nom) cuenta[nom] = (cuenta[nom] || 0) + n;
+  }
+  const top = Object.entries(cuenta).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  $("masPedido").hidden = !top.length;
+  $("top").innerHTML = top.map(([n, c]) => `<span>${esc(n)} · <b>${c}</b></span>`).join("");
+
+  const lista = filtro === "nuevo" ? pedidos.filter((p) => p.estado === "nuevo") : pedidos;
+  $("lista").innerHTML = lista.length ? lista.map((p) => {
+    const f = new Date(p.creado);
+    const cuando = f.toLocaleString("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    const acciones = p.estado === "nuevo"
+      ? `<button class="prim" data-id="${p.id}" data-e="atendido">✅ Atendido</button><button data-id="${p.id}" data-e="cancelado">✕ Cancelar</button>`
+      : `<button data-id="${p.id}" data-e="nuevo">↩️ Volver a nuevo</button>`;
+    return `<div class="pedido ${esc(p.estado)}">
+      <div class="cab"><span class="hora">${esc(cuando)} · <span class="etq ${esc(p.estado)}">${esc(p.estado)}</span></span><span class="total">${p.total != null ? peso(p.total) : ""}</span></div>
+      <div class="texto">${esc(p.texto)}</div><div class="acc">${acciones}</div></div>`;
+  }).join("") : `<p class="vacio">${filtro === "nuevo" ? "No hay pedidos nuevos. 👍" : "Todavía no hay pedidos. Cuando un cliente pida por WhatsApp desde tu app, aparecerá aquí."}</p>`;
+  $("lista").querySelectorAll("[data-id]").forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      await llamar("estado", { slug, id: +b.dataset.id, estado: b.dataset.e });
+      const p = pedidos.find((x) => x.id === +b.dataset.id); if (p) p.estado = b.dataset.e;
+      pintar();
+    } catch (e) { mostrarError(e.message); b.disabled = false; }
+  });
+}
+document.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => {
+  filtro = b.dataset.f;
+  document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  pintar();
+});
+$("volver").onclick = () => verApps().catch((e) => mostrarError(e.message));
+$("actualizar").onclick = () => (slug ? verPanel() : verApps()).catch((e) => mostrarError(e.message));
+
+$("crearEnlace").onclick = async () => {
+  if (!confirm("Se creará un enlace nuevo para el dueño del negocio. Si ya le habías dado otro, ese dejará de funcionar. ¿Continuar?")) return;
+  try {
+    const d = await llamar("crear_enlace", { slug });
+    mostrarEnlace(d.clave_pedidos);
+  } catch (e) { mostrarError(e.message); }
+};
+function mostrarEnlace(clave) {
+  const url = location.origin + location.pathname + "?a=" + slug + "#k=" + clave;
+  $("enlaceNegocio").textContent = url;
+  $("waEnlace").href = "https://wa.me/?text=" + encodeURIComponent("Aquí puedes ver los pedidos de tu app: " + url);
+  $("compartirCaja").hidden = false;
+  $("copiarEnlace").onclick = async () => { try { await navigator.clipboard.writeText(url); $("copiarEnlace").textContent = "✅ Copiado"; } catch (e) {} };
+}
+
+// Revisa pedidos nuevos cada 30 segundos mientras la página está abierta
+setInterval(() => { if (slug && !document.hidden && !$("panel").hidden) verPanel().catch(() => {}); }, 30000);
+
+async function iniciar() {
+  mostrarError("");
+  try {
+    if (claveNegocio && slug) return await verPanel();
+    if (!claveFabrica) return pedirClave();
+    if (slug) return await verPanel();
+    await verApps();
+  } catch (e) { mostrarError(e.message); }
+}
+iniciar();
+</script>
+</body>
+</html>
