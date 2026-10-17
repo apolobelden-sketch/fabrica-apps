@@ -55,7 +55,7 @@ button.pubb{background:var(--ac);color:#fff}
 <body>
 <header>
   <div><h1>🏭 Fábrica de Apps</h1><small>Escribe tu idea y la IA te arma la app</small></div>
-  <div class="fila"><button id="deshacer" disabled title="Regresar a la versión anterior">↩️ Deshacer</button><button id="nuevo">Nuevo</button></div>
+  <div class="fila"><a href="pedidos.html" id="verPedidos" style="text-decoration:none"><button type="button">📋 Pedidos</button></a><button id="deshacer" disabled title="Regresar a la versión anterior">↩️ Deshacer</button><button id="nuevo">Nuevo</button></div>
 </header>
 <main>
   <section class="col">
@@ -98,6 +98,11 @@ button.pubb{background:var(--ac);color:#fff}
         <a class="enlace" id="pubUrl" target="_blank" rel="noopener"></a>
         <div class="fila"><button id="copiarUrl">Copiar enlace</button><a id="waUrl" target="_blank" rel="noopener"><button type="button">Compartir por WhatsApp</button></a></div>
         <small>Si le haces cambios a la app y vuelves a tocar «Publicar», se actualiza en este mismo enlace.</small>
+        <div id="panelBox" hidden>
+          <b>📋 Panel de pedidos del negocio</b>
+          <small>Cada pedido que los clientes manden por WhatsApp desde esta app queda guardado aquí. Pásale este enlace al dueño del negocio: ve sus pedidos, pero no puede cambiar la app.</small>
+          <div class="fila"><a id="panelUrl" target="_blank" rel="noopener"><button type="button">Abrir panel</button></a><a id="panelWa" target="_blank" rel="noopener"><button type="button">Mandárselo por WhatsApp</button></a></div>
+        </div>
         <div id="qrBox">
           <img id="qrImg" alt="Código QR para pedir por WhatsApp">
           <small id="qrNota">📱 Mantén presionada la imagen para <b>guardarla</b> o <b>compartirla</b> por WhatsApp. El QR no cambia aunque actualices la app.</small>
@@ -290,6 +295,18 @@ function mostrarEnlace(p, actualizada) {
   $("pubMsg").textContent = actualizada ? "¡Listo! Se actualizó tu app en el mismo enlace." : "¡Tu app ya está en línea!";
   $("pubUrl").href = p.url; $("pubUrl").textContent = p.url;
   $("waUrl").href = "https://wa.me/?text=" + encodeURIComponent("Mira mi app: " + p.url);
+  if (p.clave_pedidos) {
+    const panel = new URL("pedidos.html?a=" + p.slug + "#k=" + p.clave_pedidos, location.href).href;
+    $("panelUrl").href = panel;
+    $("panelWa").href = "https://wa.me/?text=" + encodeURIComponent("Aquí puedes ver los pedidos de tu app: " + panel);
+    $("panelWa").hidden = false;
+    $("panelBox").hidden = false;
+  } else {
+    $("panelUrl").href = "pedidos.html?a=" + p.slug;
+    $("panelWa").removeAttribute("href");
+    $("panelBox").hidden = false;
+    $("panelWa").hidden = true;
+  }
   dibujarQr(p);
 }
 
@@ -348,7 +365,7 @@ $("confirmarPub").onclick = async () => {
   try {
     const { r, d } = await enviarSeguro(PUB, { nombre, html: codigo, slug: publicada?.slug, clave: publicada?.clave });
     if (!r.ok || !d.url) throw new Error(d.error || "Error " + r.status);
-    publicada = { slug: d.slug, clave: d.clave, url: d.url, nombre };
+    publicada = { slug: d.slug, clave: d.clave, url: d.url, nombre, clave_pedidos: d.clave_pedidos || (publicada && publicada.slug === d.slug ? publicada.clave_pedidos : undefined) };
     try { localStorage.setItem("fabrica_publicada", JSON.stringify(publicada)); } catch (e) {}
     mostrarEnlace(publicada, d.actualizada);
     burbuja("🔗 App publicada: " + d.url, "ia");
