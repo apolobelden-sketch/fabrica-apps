@@ -47,6 +47,8 @@ button.pubb{background:var(--ac);color:#fff}
 .fotoInfo button{padding:6px 10px;font-size:.8rem}
 #qrBox{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 #qrImg{width:100%;max-width:320px;border-radius:12px;border:1px solid var(--bd);background:#fff}
+#acceso{background:#fff8e6;color:#1d2420;border:1px solid #f0d58a;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+#acceso input{padding:10px;border:1px solid #ccc;border-radius:8px;font-size:1rem;letter-spacing:.05em}
 @media print{body *{visibility:hidden}#qrImg,#qrImg *{visibility:visible}#qrImg{position:fixed;top:0;left:0;width:100%;max-width:none;border:0}}
 </style>
 </head>
@@ -57,6 +59,11 @@ button.pubb{background:var(--ac);color:#fff}
 </header>
 <main>
   <section class="col">
+    <div id="acceso" hidden>
+      <label for="claveIn"><b>🔒 Código de acceso</b><br><small>Solo el dueño de la Fábrica puede crear y publicar apps. Escríbelo una vez y este celular lo recordará.</small></label>
+      <input id="claveIn" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="xxxx-xxxx-xxxx">
+      <div class="fila"><button class="prim" id="claveOk" type="button">Guardar código</button></div>
+    </div>
     <div id="chat"><div class="msg ia">¡Hola! Cuéntame qué app quieres. Por ejemplo: un menú para tu taquería, un catálogo de productos o un cuestionario para tus alumnos.</div></div>
     <div class="ejemplos">
       <button data-e="Menú digital para una taquería con precios en pesos, categorías (tacos, bebidas, extras) y un botón para pedir por WhatsApp (pon aquí tu número de 10 dígitos)">🌮 Menú taquería</button>
@@ -110,6 +117,39 @@ const FUNC = SUPABASE_URL + "/functions/v1/generar-app";
 let codigo = "";
 const $ = (id) => document.getElementById(id);
 const chat = $("chat"), idea = $("idea"), enviar = $("enviar"), vista = $("vista");
+
+// ---- Candado de dueño: el código se pide una vez y se manda en cada envío ----
+let claveFabrica = "";
+try { claveFabrica = localStorage.getItem("fabrica_clave") || ""; } catch (e) {}
+function pedirClave(msg) {
+  $("acceso").hidden = false;
+  if (msg) $("claveIn").placeholder = msg;
+  $("claveIn").focus();
+}
+$("claveOk").onclick = () => {
+  const v = $("claveIn").value.trim().toLowerCase();
+  if (v.length < 6) { $("claveIn").focus(); return; }
+  claveFabrica = v;
+  try { localStorage.setItem("fabrica_clave", v); } catch (e) {}
+  $("claveIn").value = ""; $("acceso").hidden = true;
+  burbuja("🔓 Código guardado. Ya puedes crear y publicar apps.", "ia");
+};
+$("claveIn").addEventListener("keydown", (e) => { if (e.key === "Enter") $("claveOk").click(); });
+async function enviarSeguro(url, cuerpo) {
+  if (!claveFabrica) { pedirClave(); throw new Error("Primero escribe el código de acceso (arriba)."); }
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, "x-fabrica-clave": claveFabrica },
+    body: JSON.stringify(cuerpo),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401 && d.candado) {
+    claveFabrica = ""; try { localStorage.removeItem("fabrica_clave"); } catch (e) {}
+    pedirClave("Código incorrecto, escríbelo de nuevo");
+    throw new Error("El código de acceso no es correcto. Escríbelo de nuevo arriba.");
+  }
+  return { r, d };
+}
 
 function burbuja(texto, clase) {
   const d = document.createElement("div");
@@ -209,12 +249,7 @@ async function generar() {
   const espera = burbuja(foto.length ? "Leyendo " + (foto.length === 1 ? "la foto" : "las " + foto.length + " fotos") + " y armando la app… (20 a 90 segundos)" : codigo ? "Aplicando tu cambio… (20 a 60 segundos)" : "Construyendo tu app… (20 a 60 segundos)", "ia");
   const t0 = Date.now();
   try {
-    const r = await fetch(FUNC, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
-      body: JSON.stringify({ idea: texto, codigo_actual: codigo || undefined, imagenes: foto.length ? foto : undefined }),
-    });
-    const d = await r.json();
+    const { r, d } = await enviarSeguro(FUNC, { idea: texto, codigo_actual: codigo || undefined, imagenes: foto.length ? foto : undefined });
     if (!r.ok || !d.html) throw new Error((d.error || "Error " + r.status) + (d.avisos && d.avisos.length ? "\n" + d.avisos.join("\n") : ""));
     if (foto.length) { fotos = []; pintarFotos(); }
     if (d.menu_foto) burbuja("📋 Esto leí en las fotos (revisa que los productos y precios estén bien):\n" + d.menu_foto, "ia");
@@ -311,12 +346,7 @@ $("confirmarPub").onclick = async () => {
   if (nombre.length < 2) { $("nombreApp").focus(); return; }
   const b = $("confirmarPub"); b.disabled = true; const t = b.textContent; b.textContent = "Publicando…";
   try {
-    const r = await fetch(PUB, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
-      body: JSON.stringify({ nombre, html: codigo, slug: publicada?.slug, clave: publicada?.clave }),
-    });
-    const d = await r.json();
+    const { r, d } = await enviarSeguro(PUB, { nombre, html: codigo, slug: publicada?.slug, clave: publicada?.clave });
     if (!r.ok || !d.url) throw new Error(d.error || "Error " + r.status);
     publicada = { slug: d.slug, clave: d.clave, url: d.url, nombre };
     try { localStorage.setItem("fabrica_publicada", JSON.stringify(publicada)); } catch (e) {}
@@ -354,6 +384,7 @@ $("nuevo").onclick = () => {
 };
 
 guardarHistorial();
+if (!claveFabrica) pedirClave();
 // Abrir una app publicada para editarla: .../fabrica-apps/#editar=nombre-de-la-app
 const editar = (location.hash.match(/^#editar=([a-z0-9-]{1,60})$/) || [])[1];
 if (editar) {
