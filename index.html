@@ -28,6 +28,10 @@ button.prim{background:var(--ac);color:#fff;flex:1}
 button:disabled{opacity:.5;cursor:wait}
 .ejemplos{display:flex;gap:6px;flex-wrap:wrap}
 .ejemplos button{font-size:.8rem;padding:6px 10px;font-weight:500;border:1px solid var(--bd);background:var(--panel)}
+.integ{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 10px}
+.integ summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.integ summary small{color:var(--sub);font-weight:400}
+.integ .ejemplos{margin-top:8px}
 #vista{width:100%;height:100%;border:1px solid var(--bd);border-radius:12px;background:#fff}
 .barra{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .barra span{color:var(--sub);font-size:.85rem;margin-right:auto}
@@ -72,6 +76,22 @@ button.pubb{background:var(--ac);color:#fff}
       <button data-e="Agenda de citas para una barbería: elegir día, hora y servicio, y guardar la lista de citas">💈 Citas</button>
     </div>
     <textarea id="idea" placeholder="Ej.: Quiero una app para llevar el control de mis ventas del día..."></textarea>
+    <details class="integ" id="integ">
+      <summary>🔌 Integraciones <small>(toca para agregarlas a tu idea)</small></summary>
+      <div class="ejemplos">
+        <button type="button" data-i="Botón para pedir por WhatsApp al número: ">💬 WhatsApp</button>
+        <button type="button" data-i="Botón de Telegram al usuario: ">✈️ Telegram</button>
+        <button type="button" data-i="Botón para llamar al: ">📞 Llamar</button>
+        <button type="button" data-i="Mapa con la ubicación del negocio: ">📍 Mapa</button>
+        <button type="button" data-i="Apartar cita con servicio, fecha y hora; que se mande por WhatsApp y se pueda agregar al calendario de Google">📅 Citas</button>
+        <button type="button" data-i="Botón para pagar con mi link de Mercado Pago: ">💳 Pago</button>
+        <button type="button" data-i="Botones de mis redes sociales (Facebook, Instagram, TikTok): ">📱 Redes</button>
+        <button type="button" data-i="Botón para descargar la información en Excel">📥 Excel</button>
+        <button type="button" data-i="Botón para descargar el catálogo en PowerPoint">📊 PowerPoint</button>
+        <button type="button" data-i="Botón para imprimir o guardar en PDF">🖨️ PDF</button>
+        <button type="button" data-i="Botón para compartir la app">🔗 Compartir</button>
+      </div>
+    </details>
     <div id="fotoSel" hidden>
       <div id="fotoLista"></div>
       <div class="fotoInfo"><span id="fotoTxt"></span><button id="quitarFoto" type="button">Quitar todas</button></div>
@@ -275,6 +295,15 @@ async function generar() {
 enviar.onclick = generar;
 idea.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generar(); });
 document.querySelectorAll("[data-e]").forEach((b) => b.onclick = () => { idea.value = b.dataset.e; idea.focus(); });
+// Integraciones: agregan una línea a la idea; si termina en ":", el cursor queda listo para escribir el dato
+document.querySelectorAll("[data-i]").forEach((b) => b.onclick = () => {
+  const t = b.dataset.i;
+  const actual = idea.value.replace(/\s+$/, "");
+  idea.value = (actual ? actual + "\n" : "") + "- " + t;
+  idea.focus();
+  idea.setSelectionRange(idea.value.length, idea.value.length);
+  idea.scrollTop = idea.scrollHeight;
+});
 
 $("copiar").onclick = async () => {
   try { await navigator.clipboard.writeText(codigo); $("copiar").textContent = "¡Copiado!"; }
