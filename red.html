@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plaza Emprende</title>
+<meta name="description" content="Compra directo a emprendedores de tu ciudad. Ofertas, productos y servicios de negocios locales en México.">
+<meta property="og:title" content="Plaza Emprende">
+<meta property="og:description" content="Compra directo a emprendedores de tu ciudad.">
+<style>
+:root{--bg:#fbf7f2;--card:#fff;--tx:#231c17;--sub:#76685d;--line:#ece3d9;--ac:#c2461f;--ac2:#fde9e0;--ok:#0f7a5c;--ok2:#e3f3ec;--wa:#1f9d55;--sombra:0 1px 2px rgba(60,30,10,.06),0 4px 14px rgba(60,30,10,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#16120f;--card:#211b17;--tx:#f3ece6;--sub:#b4a79c;--line:#352c25;--ac:#f07a4f;--ac2:#3a2219;--ok:#46c79b;--ok2:#17302a;--wa:#33c172;--sombra:none}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+a{color:inherit}
+.env{max-width:760px;margin:0 auto;padding:0 16px 60px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 8px;border-bottom:1px solid var(--line)}
+.marca{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo b{font-size:1.25rem;letter-spacing:-.02em}
+.logo span.ic{width:36px;height:36px;border-radius:10px;background:var(--ac);color:#fff;display:grid;place-items:center;font-size:1.2rem}
+.logo small{display:block;color:var(--sub);font-size:.75rem;font-weight:500;margin-top:-2px}
+button,.btn{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:650;cursor:pointer;background:var(--ac2);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px}
+.prim{background:var(--ac);color:#fff}
+.wa{background:var(--wa);color:#fff}
+button:disabled{opacity:.55}
+.buscar{display:flex;gap:8px;margin-top:10px}
+.buscar input,.buscar select{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--tx);font:inherit}
+.buscar select{flex:0 0 38%}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;font-size:.88rem;font-weight:600;min-height:0}
+.chip[aria-pressed="true"]{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.tabs{display:flex;gap:6px;margin:14px 0 10px}
+.tabs button{flex:1;background:var(--card);border:1px solid var(--line)}
+.tabs button[aria-pressed="true"]{background:var(--ac);color:#fff;border-color:var(--ac)}
+.muro{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media (max-width:420px){.muro{gap:10px}}
+.pub{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--sombra);border:1px solid var(--line);display:flex;flex-direction:column}
+.pub .foto{aspect-ratio:1/1;background:var(--ac2);display:grid;place-items:center;font-size:2.6rem;position:relative;overflow:hidden}
+.pub .foto img{width:100%;height:100%;object-fit:cover;display:block}
+.badge{position:absolute;top:8px;left:8px;background:var(--ac);color:#fff;font-size:.72rem;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:.02em}
+.badge.aviso{background:var(--tx);color:var(--bg)}
+.pub .cuerpo{padding:10px 10px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.pub h3{margin:0;font-size:.95rem;line-height:1.25}
+.precio{font-weight:800;font-size:1.05rem}
+.precio s{color:var(--sub);font-weight:500;font-size:.85rem;margin-left:4px}
+.pub p{margin:0;color:var(--sub);font-size:.82rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.quien{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--sub);margin-top:auto;padding-top:6px;background:none;padding-left:0;padding-right:0;min-height:0;font-weight:600;text-align:left;justify-content:flex-start}
+.ini{width:22px;height:22px;border-radius:50%;background:var(--ok2);color:var(--ok);display:grid;place-items:center;font-size:.7rem;font-weight:800;flex:0 0 auto;overflow:hidden}
+.ini img{width:100%;height:100%;object-fit:cover}
+.pub .wa{margin-top:8px;font-size:.88rem;min-height:38px;padding:8px}
+.lista{display:flex;flex-direction:column;gap:10px}
+.neg{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--sombra);text-align:left;width:100%;color:var(--tx);font-weight:400}
+.neg .ini{width:48px;height:48px;font-size:1.1rem;border-radius:14px}
+.neg b{display:block}
+.neg small{color:var(--sub)}
+.vacio{text-align:center;color:var(--sub);padding:34px 12px;background:var(--card);border:1px dashed var(--line);border-radius:16px}
+.vacio b{display:block;color:var(--tx);font-size:1.05rem;margin-bottom:4px}
+.mas{width:100%;margin-top:14px}
+.caja{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;box-shadow:var(--sombra)}
+.caja h2{margin:0 0 6px;font-size:1.15rem}
+.campo{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+.campo label{font-weight:650;font-size:.9rem}
+.campo input,.campo select,.campo textarea{padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--tx);font:inherit;width:100%}
+.campo textarea{min-height:80px;resize:vertical}
+.fila{display:flex;gap:8px;flex-wrap:wrap}
+.fila>*{flex:1}
+.sub{color:var(--sub);font-size:.9rem;margin:0}
+.error{color:#c0392b;font-weight:650}
+.okmsg{background:var(--ok2);color:var(--ok);padding:12px;border-radius:12px;font-weight:650}
+.perfil{display:flex;gap:14px;align-items:center}
+.perfil .ini{width:64px;height:64px;font-size:1.5rem;border-radius:18px}
+.perfil h1{margin:0;font-size:1.3rem}
+.est{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.est div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.est b{display:block;font-size:1.25rem}
+.est span{font-size:.75rem;color:var(--sub)}
+.mia{display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding:10px 0}
+.mia img,.mia .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--ac2);display:grid;place-items:center;flex:0 0 auto}
+.mia div{flex:1;min-width:0}
+.mia small{color:var(--sub)}
+.mia button{min-height:36px;padding:6px 10px;font-size:.85rem}
+.tipos{display:flex;gap:6px}
+.tipos label{flex:1;border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center;font-weight:650;cursor:pointer;font-size:.9rem}
+.tipos input{display:none}
+.tipos input:checked+span{color:var(--ac)}
+.tipos label:has(input:checked){border-color:var(--ac);background:var(--ac2)}
+.prev{max-width:140px;border-radius:12px;display:block;margin-top:6px}
+.volver{background:none;padding:8px 0;min-height:0;color:var(--sub)}
+.pie{text-align:center;color:var(--sub);font-size:.8rem;margin-top:30px}
+</style>
+</head>
+<body>
+<header class="top"><div class="env" style="padding-bottom:0">
+  <div class="marca">
+    <a class="logo" href="#"><span class="ic">🏪</span><span><b>Plaza Emprende</b><small>Compra directo a emprendedores</small></span></a>
+    <a class="btn prim" href="#unirme" id="btnUnirme">Soy emprendedor</a>
+  </div>
+  <div id="barra">
+    <div class="buscar">
+      <input id="q" type="search" placeholder="¿Qué buscas? tacos, uñas, ropa…" enterkeyhint="search">
+      <select id="ciudad"><option value="">Todas las ciudades</option></select>
+    </div>
+    <div class="chips" id="cats"></div>
+  </div>
+</div></header>
+
+<main class="env">
+  <!-- Inicio -->
+  <section id="vInicio">
+    <div class="tabs">
+      <button data-t="pubs" aria-pressed="true">🛍️ Ofertas</button>
+      <button data-t="negs" aria-pressed="false">🏪 Negocios</button>
+    </div>
+    <div id="muro" class="muro"></div>
+    <div id="negs" class="lista" hidden></div>
+    <button id="mas" class="mas" hidden>Ver más</button>
+  </section>
+
+  <!-- Perfil de negocio -->
+  <section id="vNegocio" hidden>
+    <button class="volver" onclick="history.length > 1 ? history.back() : (location.hash = '')">← Regresar</button>
+    <div class="caja" id="perfil"></div>
+    <div id="muroNeg" class="muro"></div>
+  </section>
+
+  <!-- Unirme -->
+  <section id="vUnirme" hidden>
+    <button class="volver" onclick="location.hash = ''">← Regresar</button>
+    <div class="caja">
+      <h2>Publica tu negocio gratis</h2>
+      <p class="sub">Llena tus datos. Revisamos tu solicitud y te mandamos por WhatsApp tu enlace para publicar tus productos y ofertas.</p>
+      <form id="fUnirme">
+        <div class="campo"><label for="uNombre">Nombre del negocio</label><input id="uNombre" maxlength="60" required></div>
+        <div class="campo"><label for="uCat">¿Qué vendes?</label><select id="uCat"></select></div>
+        <div class="fila">
+          <div class="campo"><label for="uCiudad">Ciudad</label><input id="uCiudad" maxlength="60" required placeholder="Ej. Hermosillo"></div>
+          <div class="campo"><label for="uEstado">Estado</label><input id="uEstado" maxlength="40" placeholder="Ej. Sonora"></div>
+        </div>
+        <div class="campo"><label for="uWa">WhatsApp del negocio (10 dígitos)</label><input id="uWa" inputmode="tel" maxlength="16" required placeholder="662 123 4567"></div>
+        <div class="campo"><label for="uDesc">Cuéntanos de tu negocio (opcional)</label><textarea id="uDesc" maxlength="500" placeholder="Qué vendes, horarios, si haces envíos…"></textarea></div>
+        <p class="error" id="uErr" hidden></p>
+        <button class="prim" style="width:100%" id="uEnviar">Enviar solicitud</button>
+      </form>
+      <p class="okmsg" id="uOk" hidden></p>
+    </div>
+  </section>
+
+  <!-- Panel del emprendedor -->
+  <section id="vPanel" hidden>
+    <div class="caja" id="panelCab"></div>
+    <div class="caja">
+      <h2>Nueva publicación</h2>
+      <form id="fPub">
+        <div class="tipos">
+          <label><input type="radio" name="tipo" value="producto" checked><span>🛍️ Producto</span></label>
+          <label><input type="radio" name="tipo" value="oferta"><span>🔥 Oferta</span></label>
+          <label><input type="radio" name="tipo" value="aviso"><span>📢 Aviso</span></label>
+        </div>
+        <div class="campo"><label for="pFoto">Foto (opcional)</label><input id="pFoto" type="file" accept="image/*"><img id="pPrev" class="prev" hidden alt=""></div>
+        <div class="campo"><label for="pTitulo">Título</label><input id="pTitulo" maxlength="80" required placeholder="Ej. Orden de 3 tacos de asada"></div>
+        <div class="fila">
+          <div class="campo"><label for="pPrecio">Precio $</label><input id="pPrecio" inputmode="decimal" maxlength="10" placeholder="Opcional"></div>
+          <div class="campo" id="campoAntes" hidden><label for="pAntes">Antes $</label><input id="pAntes" inputmode="decimal" maxlength="10"></div>
+        </div>
+        <div class="campo"><label for="pTexto">Descripción</label><textarea id="pTexto" maxlength="1000" placeholder="Detalles, tamaños, horario de la oferta…"></textarea></div>
+        <p class="error" id="pErr" hidden></p>
+        <button class="prim" style="width:100%" id="pEnviar">Publicar</button>
+      </form>
+    </div>
+    <div class="caja"><h2>Mis publicaciones</h2><div id="misPubs"></div></div>
+  </section>
+  <p class="error" id="error" hidden></p>
+  <p class="pie">Plaza Emprende · hecho para emprendedores de México</p>
+</main>
+
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/red";
+const ALMACEN = "https://fmimdflqozqgyhsfztdk.supabase.co/storage/v1/object/public/";
+const CATS = { comida: "🍔 Comida", belleza: "💅 Belleza", ropa: "👗 Ropa", tienda: "🛒 Tienda", servicios: "🛠️ Servicios", salud: "🩺 Salud", hogar: "🏠 Hogar", educacion: "📚 Educación", tecnologia: "💻 Tecnología", eventos: "🎉 Eventos", otro: "✨ Otro" };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const peso = (n) => n == null ? "" : "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+const imgOk = (u) => typeof u === "string" && u.startsWith(ALMACEN) ? u : "";
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const emoji = (cat) => (CATS[cat] || "✨").split(" ")[0];
+const inicial = (n) => (String(n || "?").trim()[0] || "?").toUpperCase();
+const avatar = (n) => imgOk(n.logo_url) ? `<span class="ini"><img src="${esc(n.logo_url)}" alt=""></span>` : `<span class="ini">${esc(inicial(n.nombre))}</span>`;
+
+async function api(accion, cuerpo, cab) {
+  const r = await fetch(FN + "?accion=" + accion, { method: "POST", headers: { "Content-Type": "application/json", ...(cab || {}) }, body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(d.error || "Algo falló, intenta de nuevo."), { candado: d.candado });
+  return d;
+}
+function clic(negocio, pub, tipo) {
+  try { navigator.sendBeacon(FN + "?accion=clic", new Blob([JSON.stringify({ negocio, pub, tipo })], { type: "text/plain" })); } catch (e) {}
+}
+function mensajeWa(n, p) {
+  const t = p ? `Hola 👋 Vi en Plaza Emprende: "${p.titulo}"${p.precio != null ? " a " + peso(p.precio) : ""}. ¿Me das más información?` : `Hola 👋 Vi tu negocio ${n.nombre} en Plaza Emprende. Quiero información.`;
+  return `https://wa.me/${encodeURIComponent(n.whatsapp)}?text=${encodeURIComponent(t)}`;
+}
+function mostrarError(m) { $("error").textContent = m || ""; $("error").hidden = !m; }
+
+// ---------- Filtros ----------
+let filtro = { q: "", ciudad: ls.get("plaza_ciudad") || "", categoria: "" }, vista = "pubs", pagina = 0;
+$("cats").innerHTML = `<button class="chip" data-c="" aria-pressed="true">Todo</button>` + Object.entries(CATS).map(([k, v]) => `<button class="chip" data-c="${k}" aria-pressed="false">${v}</button>`).join("");
+$("uCat").innerHTML = Object.entries(CATS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("cats").onclick = (e) => {
+  const b = e.target.closest("[data-c]"); if (!b) return;
+  filtro.categoria = b.dataset.c;
+  $("cats").querySelectorAll("[data-c]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  cargar(true);
+};
+let tq; $("q").oninput = () => { clearTimeout(tq); tq = setTimeout(() => { filtro.q = $("q").value.trim(); cargar(true); }, 400); };
+$("ciudad").onchange = () => { filtro.ciudad = $("ciudad").value; ls.set("plaza_ciudad", filtro.ciudad); cargar(true); };
+document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => {
+  vista = b.dataset.t;
+  document.querySelectorAll("[data-t]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  cargar(true);
+});
+async function cargarCiudades() {
+  try {
+    const d = await api("ciudades");
+    $("ciudad").innerHTML = `<option value="">Todas las ciudades</option>` + d.ciudades.map((c) => `<option value="${esc(c.ciudad)}">${esc(c.ciudad)} (${c.negocios})</option>`).join("");
+    if (filtro.ciudad && d.ciudades.some((c) => c.ciudad === filtro.ciudad)) $("ciudad").value = filtro.ciudad; else filtro.ciudad = "";
+  } catch (e) {}
+}
+
+// ---------- Muro ----------
+function tarjeta(p, conNegocio = true) {
+  const n = p.negocio;
+  const img = imgOk(p.imagen_url);
+  const desc = p.tipo === "oferta" && p.precio_antes && p.precio && p.precio_antes > p.precio ? `-${Math.round((1 - p.precio / p.precio_antes) * 100)}%` : "";
+  const badge = p.tipo === "oferta" ? `<span class="badge">OFERTA ${desc}</span>` : p.tipo === "aviso" ? `<span class="badge aviso">AVISO</span>` : "";
+  return `<article class="pub">
+    <div class="foto">${img ? `<img src="${esc(img)}" alt="${esc(p.titulo)}" loading="lazy">` : emoji(n.categoria)}${badge}</div>
+    <div class="cuerpo">
+      <h3>${esc(p.titulo)}</h3>
+      ${p.precio != null ? `<div class="precio">${peso(p.precio)}${p.precio_antes ? `<s>${peso(p.precio_antes)}</s>` : ""}</div>` : ""}
+      ${p.texto ? `<p>${esc(p.texto)}</p>` : ""}
+      ${conNegocio ? `<button class="quien" data-n="${esc(n.slug)}">${avatar(n)}<span>${esc(n.nombre)} · ${esc(n.ciudad)}</span></button>` : ""}
+      <a class="btn wa" href="${esc(mensajeWa(n, p))}" target="_blank" rel="noopener" data-clic="${p.negocio_id || ""}|${p.id}">💬 Pedir</a>
+    </div></article>`;
+}
+document.addEventListener("click", (e) => {
+  const q = e.target.closest("[data-n]"); if (q) { location.hash = "n=" + q.dataset.n; return; }
+  const w = e.target.closest("[data-clic]"); if (w) { const [n, p] = w.dataset.clic.split("|"); clic(Number(n) || null, Number(p) || null, "whatsapp"); }
+});
+async function cargar(reset) {
+  if (reset) pagina = 0;
+  mostrarError("");
+  $("muro").hidden = vista !== "pubs"; $("negs").hidden = vista !== "negs";
+  try {
+    if (vista === "pubs") {
+      const d = await api("feed", { ...filtro, pagina });
+      const html = d.publicaciones.map((p) => tarjeta(p)).join("");
+      if (reset) $("muro").innerHTML = html || vacio(); else $("muro").insertAdjacentHTML("beforeend", html);
+      $("muro").style.display = (reset && !d.publicaciones.length) ? "block" : "";
+      $("mas").hidden = !d.hay_mas;
+    } else {
+      const d = await api("negocios", filtro);
+      $("negs").innerHTML = d.negocios.length ? d.negocios.map((n) => `<button class="neg" data-n="${esc(n.slug)}">${avatar(n)}<span><b>${esc(n.nombre)}</b><small>${CATS[n.categoria] || ""} · ${esc(n.ciudad)}</small></span></button>`).join("") : vacio();
+      $("mas").hidden = true;
+    }
+  } catch (e) { mostrarError(e.message); }
+}
+const vacio = () => `<div class="vacio"><b>${filtro.q || filtro.categoria || filtro.ciudad ? "No encontramos nada con eso" : "Aquí aparecerán las ofertas"}</b>${filtro.q || filtro.categoria || filtro.ciudad ? "Prueba con otra palabra, categoría o ciudad." : "¿Tienes un negocio? Publica gratis con el botón “Soy emprendedor”."}</div>`;
+$("mas").onclick = () => { pagina++; cargar(false); };
+
+// ---------- Perfil ----------
+async function verNegocio(slug) {
+  $("perfil").innerHTML = "Cargando…"; $("muroNeg").innerHTML = "";
+  try {
+    const d = await api("negocio", { slug });
+    const n = d.negocio;
+    document.title = n.nombre + " · Plaza Emprende";
+    $("perfil").innerHTML = `<div class="perfil">${avatar(n)}<div><h1>${esc(n.nombre)}</h1><p class="sub">${CATS[n.categoria] || ""} · ${esc(n.ciudad)}${n.estado_mx ? ", " + esc(n.estado_mx) : ""}</p></div></div>
+      ${n.descripcion ? `<p style="white-space:pre-wrap">${esc(n.descripcion)}</p>` : ""}
+      <div class="fila" style="margin-top:10px">
+        <a class="btn wa" href="${esc(mensajeWa(n))}" target="_blank" rel="noopener" data-clic="${n.negocio_id}|">💬 WhatsApp</a>
+        ${n.app ? `<a class="btn" href="${esc(n.app)}" target="_blank" rel="noopener">📱 Ver su app</a>` : ""}
+        <button id="compartir">🔗 Compartir</button>
+      </div>`;
+    $("compartir").onclick = async () => { const url = location.href; try { if (navigator.share) await navigator.share({ title: n.nombre, url }); else { await navigator.clipboard.writeText(url); $("compartir").textContent = "✅ Copiado"; } } catch (e) {} };
+    $("muroNeg").innerHTML = d.publicaciones.length ? d.publicaciones.map((p) => tarjeta({ ...p, negocio: n, negocio_id: n.negocio_id }, false)).join("") : `<div class="vacio" style="grid-column:1/-1">Este negocio todavía no publica productos. Escríbele por WhatsApp.</div>`;
+  } catch (e) { $("perfil").innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+// ---------- Registro ----------
+$("fUnirme").onsubmit = async (e) => {
+  e.preventDefault();
+  $("uErr").hidden = true; $("uEnviar").disabled = true;
+  try {
+    const d = await api("solicitar", { nombre: $("uNombre").value, categoria: $("uCat").value, ciudad: $("uCiudad").value, estado_mx: $("uEstado").value, whatsapp: $("uWa").value, descripcion: $("uDesc").value });
+    $("fUnirme").hidden = true; $("uOk").textContent = d.mensaje; $("uOk").hidden = false;
+  } catch (e2) { $("uErr").textContent = e2.message; $("uErr").hidden = false; }
+  $("uEnviar").disabled = false;
+};
+
+// ---------- Panel del emprendedor ----------
+let miSlug = "", miClave = "";
+const cabRed = () => ({ "x-red-clave": miClave });
+async function verPanel() {
+  try {
+    const d = await api("mi_negocio", { slug: miSlug }, cabRed());
+    const n = d.negocio;
+    ls.set("plaza_panel", JSON.stringify({ slug: miSlug, k: miClave }));
+    document.title = "Mi panel · " + n.nombre;
+    const clics = d.publicaciones.reduce((s, p) => s + (p.clics_whatsapp || 0), 0) + (n.clics_whatsapp || 0);
+    $("panelCab").innerHTML = `<div class="perfil">${avatar(n)}<div><h1>${esc(n.nombre)}</h1><p class="sub">Tu panel privado · no compartas este enlace</p></div></div>
+      <div class="est"><div><b>${n.visitas}</b><span>visitas a tu perfil</span></div><div><b>${clics}</b><span>clics a WhatsApp</span></div><div><b>${d.publicaciones.length}</b><span>publicaciones</span></div></div>
+      <div class="fila"><a class="btn" href="${esc(n.perfil)}" target="_blank" rel="noopener">👀 Ver mi perfil</a><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent("Mira mis productos en Plaza Emprende: " + n.perfil)}" target="_blank" rel="noopener">📣 Compartir mi perfil</a></div>`;
+    $("misPubs").innerHTML = d.publicaciones.length ? d.publicaciones.map((p) => `<div class="mia">${imgOk(p.imagen_url) ? `<img src="${esc(p.imagen_url)}" alt="">` : `<span class="ph">${emoji(n.categoria)}</span>`}
+      <div><b>${esc(p.titulo)}</b><br><small>${p.precio != null ? peso(p.precio) + " · " : ""}${p.vistas || 0} vistas · ${p.clics_whatsapp || 0} clics</small></div>
+      <button data-borrar="${p.id}">Quitar</button></div>`).join("") : `<p class="sub">Todavía no publicas nada. ¡Sube tu primer producto arriba!</p>`;
+    $("misPubs").querySelectorAll("[data-borrar]").forEach((b) => b.onclick = async () => {
+      if (!confirm("¿Quitar esta publicación?")) return;
+      b.disabled = true;
+      try { await api("borrar_pub", { slug: miSlug, id: Number(b.dataset.borrar) }, cabRed()); verPanel(); } catch (e) { alert(e.message); b.disabled = false; }
+    });
+  } catch (e) {
+    $("panelCab").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+document.querySelectorAll('input[name="tipo"]').forEach((r) => r.onchange = () => { $("campoAntes").hidden = document.querySelector('input[name="tipo"]:checked').value !== "oferta"; });
+// Reduce la foto a máx. 1080 px en JPEG para que suba rápido
+let fotoData = "";
+$("pFoto").onchange = () => {
+  const f = $("pFoto").files[0]; fotoData = ""; $("pPrev").hidden = true;
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const max = 1080, k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    let q = 0.82; fotoData = c.toDataURL("image/jpeg", q);
+    while (fotoData.length > 1_300_000 && q > 0.4) { q -= 0.12; fotoData = c.toDataURL("image/jpeg", q); }
+    $("pPrev").src = fotoData; $("pPrev").hidden = false; URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(f);
+};
+$("fPub").onsubmit = async (e) => {
+  e.preventDefault();
+  $("pErr").hidden = true; $("pEnviar").disabled = true; $("pEnviar").textContent = "Publicando…";
+  try {
+    await api("publicar", { slug: miSlug, tipo: document.querySelector('input[name="tipo"]:checked').value, titulo: $("pTitulo").value, precio: $("pPrecio").value, precio_antes: $("pAntes").value, texto: $("pTexto").value, imagen: fotoData || undefined }, cabRed());
+    $("fPub").reset(); fotoData = ""; $("pPrev").hidden = true; $("campoAntes").hidden = true;
+    await verPanel();
+    $("misPubs").scrollIntoView({ behavior: "smooth" });
+  } catch (e2) { $("pErr").textContent = e2.message; $("pErr").hidden = false; }
+  $("pEnviar").disabled = false; $("pEnviar").textContent = "Publicar";
+};
+
+// ---------- Rutas ----------
+function ruta() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const vistas = { vInicio: false, vNegocio: false, vUnirme: false, vPanel: false };
+  mostrarError("");
+  if (h.get("panel")) {
+    miSlug = (h.get("panel") || "").replace(/[^a-z0-9-]/g, ""); miClave = (h.get("k") || "").replace(/[^a-f0-9]/g, "");
+    vistas.vPanel = true; verPanel();
+  } else if (h.get("n")) {
+    vistas.vNegocio = true; verNegocio((h.get("n") || "").replace(/[^a-z0-9-]/g, ""));
+  } else if (location.hash === "#unirme") {
+    vistas.vUnirme = true;
+  } else {
+    vistas.vInicio = true; document.title = "Plaza Emprende";
+  }
+  for (const [id, v] of Object.entries(vistas)) $(id).hidden = !v;
+  $("barra").hidden = !vistas.vInicio;
+  $("btnUnirme").hidden = vistas.vPanel || vistas.vUnirme;
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", ruta);
+ruta();
+cargarCiudades().then(() => cargar(true));
+</script>
+</body>
+</html>
