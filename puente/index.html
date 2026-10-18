@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Puente Guizar</title>
+<meta name="theme-color" content="#3b1466">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{--fondo:#1e0b36;--tarjeta:#2b1250;--borde:#4a2580;--morado:#3b1466;--oro:#f2c14e;--oro2:#e0a92a;--texto:#f7f1ff;--suave:#c9b6e8;--ok:#36c275}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;padding:16px 16px 40px}
+  .cab{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .cab img{width:44px;height:44px;border-radius:12px}
+  .cab h1{font-size:1.25rem;line-height:1.1}
+  .cab p{color:var(--suave);font-size:.85rem}
+  .caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:16px;padding:14px;margin-bottom:14px}
+  .caja h2{font-size:.95rem;color:var(--oro);margin-bottom:10px}
+  .vacio{text-align:center;padding:26px 10px}
+  .vacio p{color:var(--suave);font-size:.9rem;margin:8px 0 16px;line-height:1.4}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:12px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn.oro{background:var(--oro);color:#2a0f47}
+  .btn.linea{background:transparent;color:var(--texto);border:1.5px solid var(--borde)}
+  .btn:active{transform:scale(.98)}
+  .fila{display:flex;gap:8px}
+  .fila>*{flex:1}
+  #vista{width:100%;border-radius:12px;display:block;background:#000}
+  label{display:block;font-size:.82rem;color:var(--suave);margin:10px 0 4px}
+  input[type=text],input[type=number],textarea{width:100%;background:#1a0930;border:1.5px solid var(--borde);color:var(--texto);border-radius:10px;padding:11px;font-size:1rem;font-family:inherit}
+  textarea{min-height:84px;resize:vertical}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--borde);background:#1a0930;color:var(--texto);border-radius:999px;padding:9px 14px;font-size:.9rem;cursor:pointer;font-family:inherit}
+  .chip.si{background:var(--oro);border-color:var(--oro);color:#2a0f47;font-weight:700}
+  .interruptor{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--borde)}
+  .interruptor:first-of-type{border-top:0}
+  .interruptor span{font-size:.95rem}
+  .interruptor input{width:22px;height:22px;accent-color:var(--oro)}
+  .aviso{position:fixed;left:16px;right:16px;bottom:20px;background:var(--ok);color:#06210f;font-weight:700;padding:13px;border-radius:12px;text-align:center;opacity:0;transform:translateY(20px);transition:.25s;pointer-events:none;z-index:9}
+  .aviso.ver{opacity:1;transform:none}
+  .nota{color:var(--suave);font-size:.8rem;line-height:1.45;margin-top:8px}
+  .oculto{display:none}
+  .instalar{margin-top:10px}
+</style>
+</head>
+<body>
+<header class="cab">
+  <img src="icon-192.png" alt="">
+  <div><h1>Puente Guizar</h1><p>Recibe · arregla · reenvía tus imágenes</p></div>
+</header>
+
+<section class="caja vacio" id="inicio">
+  <div style="font-size:2.4rem">🖼️</div>
+  <p id="msgInicio">En WhatsApp, Facebook o tu galería toca <b>Compartir</b> y elige <b>Puente Guizar</b>.<br>O escoge una imagen aquí:</p>
+  <button class="btn oro" id="elegir">📂 Escoger imagen</button>
+  <button class="btn linea instalar oculto" id="instalar">📲 Instalar en mi pantalla</button>
+  <p class="nota" id="notaInstalar">Para que aparezca en el menú Compartir, instálala: menú ⋮ de Chrome → <b>Agregar a pantalla principal</b> / <b>Instalar app</b>.</p>
+  <input type="file" id="archivo" accept="image/*" class="oculto">
+</section>
+
+<div id="editor" class="oculto">
+  <section class="caja">
+    <canvas id="vista"></canvas>
+    <div class="fila" style="margin-top:10px">
+      <button class="btn linea" id="otra">🔄 Otra imagen</button>
+    </div>
+  </section>
+
+  <section class="caja">
+    <h2>Formato</h2>
+    <div class="chips" id="formatos">
+      <button class="chip si" data-f="original">Original</button>
+      <button class="chip" data-f="cuadro">Cuadrada (post)</button>
+      <button class="chip" data-f="historia">Historia / Estado</button>
+    </div>
+  </section>
+
+  <section class="caja">
+    <h2>Agregar a la imagen</h2>
+    <div class="interruptor"><span>Mi logo</span><input type="checkbox" id="conLogo" checked></div>
+    <div class="interruptor"><span>Mi WhatsApp abajo</span><input type="checkbox" id="conWa"></div>
+    <label for="oferta">Texto de oferta (arriba)</label>
+    <input type="text" id="oferta" placeholder="Ej. ¡Oferta de Día de Muertos!" maxlength="60">
+    <div class="fila">
+      <div><label for="precio">Precio</label><input type="number" id="precio" inputmode="decimal" placeholder="299"></div>
+      <div><label for="antes">Antes</label><input type="number" id="antes" inputmode="decimal" placeholder="499"></div>
+    </div>
+  </section>
+
+  <section class="caja">
+    <h2>Texto para la publicación</h2>
+    <textarea id="leyenda" placeholder="Lo que quieres que diga la publicación o el mensaje"></textarea>
+    <p class="nota">Al compartir, este texto se copia solo: en Instagram o Facebook mantén presionado y elige <b>Pegar</b>.</p>
+  </section>
+
+  <section class="caja">
+    <button class="btn oro" id="compartir">📤 Enviar a WhatsApp · Facebook · Instagram</button>
+    <div class="fila" style="margin-top:10px">
+      <button class="btn linea" id="descargar">⬇️ Guardar</button>
+      <button class="btn linea" id="copiar">📋 Copiar texto</button>
+    </div>
+  </section>
+</div>
+
+<div class="aviso" id="aviso"></div>
+
+<script>
+const MI_WA = "631 194 9491";
+const LOGO_URL = "https://res.cloudinary.com/dgdw8fbku/image/upload/w_300,h_300,c_fill/ediciones-guizar/servicios/logo-eg.jpg";
+const $ = (id) => document.getElementById(id);
+const lienzo = $("vista"), ctx = lienzo.getContext("2d");
+let foto = null, logo = null, formato = "original";
+
+function avisar(t) { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("ver"), 2600); }
+
+// Logo (si no carga, se usa una insignia con letras)
+(function () { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => { logo = i; dibujar(); }; i.src = LOGO_URL; })();
+
+function cargarBlob(blob) {
+  if (!blob || !/^image\//.test(blob.type || "image/")) { avisar("Eso no es una imagen"); return; }
+  const url = URL.createObjectURL(blob);
+  const i = new Image();
+  i.onload = () => { foto = i; $("inicio").classList.add("oculto"); $("editor").classList.remove("oculto"); dibujar(); window.scrollTo(0, 0); };
+  i.onerror = () => avisar("No pude abrir esa imagen");
+  i.src = url;
+}
+
+// ¿Llegó algo desde "Compartir"?
+(async function () {
+  if (!new URLSearchParams(location.search).has("compartida") || !("caches" in window)) return;
+  history.replaceState(null, "", "./");
+  const caja = await caches.open("puente-recibido");
+  const img = await caja.match("imagen"), txt = await caja.match("texto");
+  if (txt) $("leyenda").value = await txt.text();
+  if (img) { cargarBlob(await img.blob()); await caja.delete("imagen"); }
+  else $("msgInicio").innerHTML = "Llegó un <b>enlace o texto</b>, no una imagen. Primero guarda la imagen en tu teléfono y luego compártela aquí o escógela:";
+  await caja.delete("texto");
+})();
+
+$("elegir").onclick = () => $("archivo").click();
+$("otra").onclick = () => $("archivo").click();
+$("archivo").onchange = (e) => { const f = e.target.files[0]; if (f) cargarBlob(f); e.target.value = ""; };
+
+document.querySelectorAll("#formatos .chip").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("#formatos .chip").forEach((x) => x.classList.toggle("si", x === b));
+  formato = b.dataset.f; dibujar();
+});
+["conLogo", "conWa", "oferta", "precio", "antes"].forEach((id) => $(id).addEventListener("input", dibujar));
+
+function redondo(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function lineas(texto, ancho) {
+  const palabras = texto.split(/\s+/), out = []; let l = "";
+  for (const p of palabras) { const t = l ? l + " " + p : p; if (ctx.measureText(t).width > ancho && l) { out.push(l); l = p; } else l = t; }
+  if (l) out.push(l); return out.slice(0, 3);
+}
+const pesos = (n) => "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+
+function dibujar() {
+  if (!foto) return;
+  const fw = foto.naturalWidth, fh = foto.naturalHeight;
+  let W, H;
+  if (formato === "cuadro") { W = 1080; H = 1080; }
+  else if (formato === "historia") { W = 1080; H = 1920; }
+  else { const k = Math.min(1, 1600 / Math.max(fw, fh)); W = Math.round(fw * k); H = Math.round(fh * k); if (Math.min(W, H) < 480) { const k2 = 480 / Math.min(W, H); W = Math.round(W * k2); H = Math.round(H * k2); } }
+  lienzo.width = W; lienzo.height = H;
+
+  if (formato === "original") ctx.drawImage(foto, 0, 0, W, H);
+  else {
+    // Fondo: la misma foto ampliada y difuminada; encima, la foto completa
+    const cub = Math.max(W / fw, H / fh);
+    ctx.save(); ctx.filter = "blur(28px) brightness(.6)";
+    ctx.drawImage(foto, (W - fw * cub) / 2, (H - fh * cub) / 2, fw * cub, fh * cub); ctx.restore();
+    const con = Math.min(W / fw, H / fh);
+    ctx.drawImage(foto, (W - fw * con) / 2, (H - fh * con) / 2, fw * con, fh * con);
+  }
+
+  const u = Math.min(W, H) / 100; // unidad de medida proporcional
+  const oferta = $("oferta").value.trim(), precio = $("precio").value, antes = $("antes").value;
+
+  // Banda de oferta arriba
+  if (oferta) {
+    ctx.font = `800 ${6.2 * u}px system-ui, sans-serif`;
+    const ls = lineas(oferta.toUpperCase(), W - 12 * u);
+    const alto = ls.length * 7.4 * u + 5 * u;
+    ctx.fillStyle = "rgba(59,20,102,.92)"; ctx.fillRect(0, 0, W, alto);
+    ctx.fillStyle = "#f2c14e"; ctx.fillRect(0, alto - 0.9 * u, W, 0.9 * u);
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ls.forEach((l, i) => ctx.fillText(l, W / 2, 2.8 * u + i * 7.4 * u));
+  }
+
+  // Banda de WhatsApp abajo
+  const altoWa = 8.5 * u;
+  if ($("conWa").checked) {
+    ctx.fillStyle = "rgba(30,11,54,.9)"; ctx.fillRect(0, H - altoWa, W, altoWa);
+    ctx.fillStyle = "#f2c14e"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `700 ${4.2 * u}px system-ui, sans-serif`;
+    ctx.fillText("💬 Pide por WhatsApp: " + MI_WA, W / 2, H - altoWa / 2);
+  }
+  const baseY = H - ($("conWa").checked ? altoWa : 0);
+
+  // Etiqueta de precio
+  if (precio) {
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `900 ${10 * u}px system-ui, sans-serif`;
+    const tp = pesos(precio), ancho = Math.max(ctx.measureText(tp).width + 8 * u, 30 * u);
+    const altoP = antes ? 21 * u : 15 * u;
+    const x = W - ancho - 4 * u, y = baseY - altoP - 4 * u;
+    ctx.save(); ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = 3 * u;
+    ctx.fillStyle = "#f2c14e"; redondo(x, y, ancho, altoP, 3 * u); ctx.fill(); ctx.restore();
+    ctx.fillStyle = "#2a0f47";
+    if (antes) {
+      ctx.font = `600 ${4.2 * u}px system-ui, sans-serif`;
+      const ta = "Antes " + pesos(antes); ctx.fillText(ta, x + ancho / 2, y + 4.8 * u);
+      const wa = ctx.measureText(ta).width; ctx.fillRect(x + ancho / 2 - wa / 2, y + 4.8 * u, wa, 0.5 * u);
+      ctx.font = `900 ${10 * u}px system-ui, sans-serif`; ctx.fillText(tp, x + ancho / 2, y + 13.6 * u);
+    } else ctx.fillText(tp, x + ancho / 2, y + altoP / 2 + 0.4 * u);
+  }
+
+  // Logo en círculo
+  if ($("conLogo").checked) {
+    const r = 8 * u, cx = 4 * u + r, cy = baseY - 4 * u - r;
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r + 0.8 * u, 0, Math.PI * 2); ctx.fillStyle = "#f2c14e"; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+    if (logo) ctx.drawImage(logo, cx - r, cy - r, r * 2, r * 2);
+    else { ctx.fillStyle = "#3b1466"; ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r); ctx.fillStyle = "#fff"; ctx.font = `800 ${6 * u}px system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("EG", cx, cy); }
+    ctx.restore();
+  }
+}
+
+function archivoFinal() {
+  return new Promise((ok) => lienzo.toBlob((b) => ok(new File([b], "guizar-" + Date.now() + ".jpg", { type: "image/jpeg" })), "image/jpeg", 0.92));
+}
+async function copiarTexto(silencioso) {
+  const t = $("leyenda").value.trim(); if (!t) return false;
+  try { await navigator.clipboard.writeText(t); if (!silencioso) avisar("Texto copiado ✅"); return true; } catch { if (!silencioso) avisar("No pude copiar el texto"); return false; }
+}
+$("copiar").onclick = () => copiarTexto(false);
+$("descargar").onclick = async () => {
+  const f = await archivoFinal(), a = document.createElement("a");
+  a.href = URL.createObjectURL(f); a.download = f.name; a.click(); avisar("Imagen guardada ✅");
+};
+$("compartir").onclick = async () => {
+  const f = await archivoFinal();
+  const copiado = await copiarTexto(true);
+  if (navigator.canShare && navigator.canShare({ files: [f] })) {
+    try { await navigator.share({ files: [f] }); if (copiado) avisar("Listo. El texto ya está copiado para pegarlo"); }
+    catch (e) { if (e.name !== "AbortError") avisar("No se pudo compartir; usa Guardar"); }
+  } else { $("descargar").click(); avisar("Tu navegador no comparte imágenes; la guardé para que la subas"); }
+};
+
+// Instalación y servicio para recibir desde "Compartir"
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+let pedirInstalar = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedirInstalar = e; $("instalar").classList.remove("oculto"); });
+$("instalar").onclick = async () => { if (!pedirInstalar) return; pedirInstalar.prompt(); await pedirInstalar.userChoice; pedirInstalar = null; $("instalar").classList.add("oculto"); };
+if (matchMedia("(display-mode: standalone)").matches) $("notaInstalar").classList.add("oculto");
+</script>
+</body>
+</html>
