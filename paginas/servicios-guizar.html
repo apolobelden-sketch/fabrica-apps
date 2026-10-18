@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!-- RESUMEN: Página de servicios para Ediciones Guizar con dos productos, precios, descripción y botones de contacto por WhatsApp. -->
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Servicios de Ediciones Guizar</title>
+  <style>
+    :root {
+      --color-morado: #6a0dad;
+      --color-dorado: #d4af37;
+      --bg-light: #fafafa;
+    }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg-light);
+      color: #333;
+      line-height: 1.5;
+    }
+    header {
+      background: var(--color-morado);
+      color: #fff;
+      padding: 1.5rem 1rem;
+      text-align: center;
+    }
+    header h1 {
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+    header p {
+      font-size: 1rem;
+    }
+    .container {
+      padding: 1rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .cards {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 1fr;
+    }
+    @media(min-width:600px){
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      background:#fff;
+      border-radius:14px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+      padding:1rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .card h2 {
+      color: var(--color-morado);
+      margin-bottom:0.5rem;
+      font-size:1.4rem;
+    }
+    .card .price {
+      font-size:1.6rem;
+      font-weight:bold;
+      margin:0.5rem 0;
+      color: var(--color-dorado);
+    }
+    .card .old-price {
+      text-decoration: line-through;
+      color:#777;
+      font-size:1rem;
+      margin-left:0.5rem;
+    }
+    .card p {
+      flex-grow:1;
+      margin-bottom:1rem;
+    }
+    .btn {
+      display:inline-block;
+      text-align:center;
+      background: var(--color-dorado);
+      color:#000;
+      padding:0.8rem 1.2rem;
+      border:none;
+      border-radius:14px;
+      font-size:1rem;
+      cursor:pointer;
+      text-decoration:none;
+      transition:background .2s;
+      min-width:120px;
+    }
+    .btn:hover{
+      background:#c99a2b;
+    }
+    .whatsapp-float {
+      position:fixed;
+      bottom:1.5rem;
+      right:1.5rem;
+      background:#25D366;
+      color:#fff;
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:2rem;
+      box-shadow:0 2px 8px rgba(0,0,0,0.2);
+      text-decoration:none;
+    }
+    .whatsapp-float:hover { background:#1ebc5a; }
+    footer {
+      text-align:center;
+      padding:1rem;
+      font-size:0.9rem;
+      color:#555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ediciones Guizar</h1>
+    <p>Servicios profesionales de edición digital</p>
+  </header>
+
+  <main class="container">
+    <section class="cards">
+      <article class="card">
+        <h2>Menú digital para negocios</h2>
+        <p>Diseñamos un menú interactivo que permite a tus clientes hacer pedidos directamente por WhatsApp. Ideal para restaurantes, cafés y cualquier negocio que quiera modernizar su carta.</p>
+        <div class="price">$299 <span class="old-price">$499</span></div>
+        <a class="btn" href="https://wa.me/526311949491" target="_blank">Contactar por WhatsApp</a>
+      </article>
+
+      <article class="card">
+        <h2>Catálogo digital</h2>
+        <p>Creación de un catálogo atractivo y fácil de compartir, con imágenes, descripciones y precios. Perfecto para presentar tus productos o servicios en línea.</p>
+        <div class="price">$499</div>
+        <a class="btn" href="https://wa.me/526311949491" target="_blank">Contactar por WhatsApp</a>
+      </article>
+    </section>
+  </main>
+
+  <a class="whatsapp-float" href="https://wa.me/526311949491" target="_blank" aria-label="WhatsApp">
+    📞
+  </a>
+
+  <footer>
+    © 2026 Ediciones Guizar • <a href="https://wa.me/526311949491" style="color:var(--color-morado); text-decoration:none;">WhatsApp: 631 194 9491</a>
+  </footer>
+
+  <script>
+    // No script needed for this static page, but kept for future extensions.
+  </script>
+</body>
+</html>
