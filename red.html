@@ -92,6 +92,8 @@ button:disabled{opacity:.55}
 .volver{background:none;padding:8px 0;min-height:0;color:var(--sub)}
 .pie{text-align:center;color:var(--sub);font-size:.8rem;margin-top:30px}
 </style>
+<link rel="preconnect" href="https://fmimdflqozqgyhsfztdk.supabase.co" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com">
 </head>
 <body>
 <header class="top"><div class="env" style="padding-bottom:0">
@@ -193,13 +195,42 @@ const textoBoton = (u) => u.includes("/videomarket-pro/") ? "🛒 Comprar" : "�
 const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 const emoji = (cat) => (CATS[cat] || "✨").split(" ")[0];
 const inicial = (n) => (String(n || "?").trim()[0] || "?").toUpperCase();
-const avatar = (n) => imgOk(n.logo_url) ? `<span class="ini"><img src="${esc(n.logo_url)}" alt=""></span>` : `<span class="ini">${esc(inicial(n.nombre))}</span>`;
+// Imágenes ligeras para datos móviles: Cloudinary entrega formato moderno, calidad económica y tamaño justo
+const ligera = (u, w = 480) => u.startsWith("https://res.cloudinary.com/dgdw8fbku/image/upload/") ? u.replace(/\/image\/upload\/((?:[a-z]{1,3}_[^/]+\/)*)/, (_m, t) => `/image/upload/${t}f_auto,q_auto:eco,w_${w},c_limit/`) : u;
+const avatar = (n) => imgOk(n.logo_url) ? `<span class="ini"><img src="${esc(ligera(n.logo_url, 128))}" alt=""></span>` : `<span class="ini">${esc(inicial(n.nombre))}</span>`;
 
+// Con señal saturada: espera un tiempo razonable, reintenta y, si no hay internet, muestra lo último guardado
+const GUARDABLES = ["feed", "negocio", "negocios", "ciudades"];
 async function api(accion, cuerpo, cab) {
-  const r = await fetch(FN + "?accion=" + accion, { method: "POST", headers: { "Content-Type": "application/json", ...(cab || {}) }, body: JSON.stringify(cuerpo || {}) });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(d.error || "Algo falló, intenta de nuevo."), { candado: d.candado });
-  return d;
+  const llave = "plaza_c_" + accion + JSON.stringify(cuerpo || {});
+  // Si ya hay copia guardada no se hace esperar: un intento corto y, si falla, la copia
+  const hayCopia = GUARDABLES.includes(accion) && !!ls.get(llave);
+  const intentos = hayCopia ? 1 : 3;
+  let ultimo;
+  for (let intento = 0; intento < intentos; intento++) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), hayCopia ? 8000 : intento ? 20000 : 10000);
+    try {
+      const r = await fetch(FN + "?accion=" + accion, { method: "POST", headers: { "Content-Type": "application/json", ...(cab || {}) }, body: JSON.stringify(cuerpo || {}), signal: ctl.signal });
+      const d = await r.json().catch(() => ({}));
+      clearTimeout(t);
+      if (!r.ok) throw Object.assign(new Error(d.error || "Algo falló, intenta de nuevo."), { candado: d.candado, definitivo: r.status < 500 });
+      if (GUARDABLES.includes(accion)) ls.set(llave, JSON.stringify(d));
+      avisoSenal(false);
+      return d;
+    } catch (e) {
+      clearTimeout(t); ultimo = e;
+      if (e.definitivo) throw e;
+      if (intento < intentos - 1) await new Promise((ok) => setTimeout(ok, 1200 * (intento + 1)));
+    }
+  }
+  const guardado = GUARDABLES.includes(accion) && ls.get(llave);
+  if (guardado) { avisoSenal(true); return JSON.parse(guardado); }
+  throw new Error("No hay buena señal ahorita. Revisa tus datos o intenta en un momento.");
+}
+function avisoSenal(si) {
+  let a = document.getElementById("avisoSenal");
+  if (!a && si) { a = document.createElement("div"); a.id = "avisoSenal"; a.style.cssText = "position:sticky;top:0;z-index:20;background:#f2c14e;color:#2a0f47;font-weight:700;text-align:center;padding:8px;font-size:.85rem"; a.textContent = "📶 Señal débil: te muestro lo último guardado"; document.body.prepend(a); }
+  if (a) a.hidden = !si;
 }
 function clic(negocio, pub, tipo) {
   try { navigator.sendBeacon(FN + "?accion=clic", new Blob([JSON.stringify({ negocio, pub, tipo })], { type: "text/plain" })); } catch (e) {}
@@ -242,7 +273,7 @@ function tarjeta(p, conNegocio = true) {
   const desc = p.tipo === "oferta" && p.precio_antes && p.precio && p.precio_antes > p.precio ? `-${Math.round((1 - p.precio / p.precio_antes) * 100)}%` : "";
   const badge = p.tipo === "oferta" ? `<span class="badge">OFERTA ${desc}</span>` : p.tipo === "aviso" ? `<span class="badge aviso">AVISO</span>` : "";
   return `<article class="pub">
-    <div class="foto">${img ? `<img src="${esc(img)}" alt="${esc(p.titulo)}" loading="lazy">` : emoji(n.categoria)}${badge}</div>
+    <div class="foto">${img ? `<img src="${esc(ligera(img))}" alt="${esc(p.titulo)}" loading="lazy" decoding="async">` : emoji(n.categoria)}${badge}</div>
     <div class="cuerpo">
       <h3>${esc(p.titulo)}</h3>
       ${p.precio != null ? `<div class="precio">${peso(p.precio)}${p.precio_antes ? `<s>${peso(p.precio_antes)}</s>` : ""}</div>` : ""}
@@ -320,7 +351,7 @@ async function verPanel() {
     $("panelCab").innerHTML = `<div class="perfil">${avatar(n)}<div><h1>${esc(n.nombre)}</h1><p class="sub">Tu panel privado · no compartas este enlace</p></div></div>
       <div class="est"><div><b>${n.visitas}</b><span>visitas a tu perfil</span></div><div><b>${clics}</b><span>clics a WhatsApp</span></div><div><b>${d.publicaciones.length}</b><span>publicaciones</span></div></div>
       <div class="fila"><a class="btn" href="${esc(n.perfil)}" target="_blank" rel="noopener">👀 Ver mi perfil</a><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent("Mira mis productos en Plaza Emprende: " + n.perfil)}" target="_blank" rel="noopener">📣 Compartir mi perfil</a></div>`;
-    $("misPubs").innerHTML = d.publicaciones.length ? d.publicaciones.map((p) => `<div class="mia">${imgOk(p.imagen_url) ? `<img src="${esc(p.imagen_url)}" alt="">` : `<span class="ph">${emoji(n.categoria)}</span>`}
+    $("misPubs").innerHTML = d.publicaciones.length ? d.publicaciones.map((p) => `<div class="mia">${imgOk(p.imagen_url) ? `<img src="${esc(ligera(p.imagen_url, 160))}" alt="">` : `<span class="ph">${emoji(n.categoria)}</span>`}
       <div><b>${esc(p.titulo)}</b><br><small>${p.precio != null ? peso(p.precio) + " · " : ""}${p.vistas || 0} vistas · ${p.clics_whatsapp || 0} clics</small></div>
       <button data-borrar="${p.id}">Quitar</button></div>`).join("") : `<p class="sub">Todavía no publicas nada. ¡Sube tu primer producto arriba!</p>`;
     $("misPubs").querySelectorAll("[data-borrar]").forEach((b) => b.onclick = async () => {
@@ -382,6 +413,8 @@ function ruta() {
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", ruta);
+// Guarda la página y las fotos en el teléfono para abrir rápido aunque la señal esté mala (solo afecta a esta página)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw-plaza.js", { scope: "./red.html" }).catch(() => {});
 ruta();
 cargarCiudades().then(() => cargar(true));
 </script>
