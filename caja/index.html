@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caja Guizar · punto de venta y fiado sin internet</title>
+<meta name="description" content="Punto de venta gratis para tienditas: vende escaneando con la cámara, lleva el fiado de tus clientes, inventario, corte de caja y reportes. Funciona sin internet.">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --verde:#14532d; --verde2:#1f6b3d; --mostaza:#f4b400; --rojo:#b42318; --tinta:#1c2420;
+    --fondo:#eef4ef; --blanco:#fff; --gris:#5b6b62; --linea:#d5e2d8; --azul-renglon:#c9d8ee; --margen:#e8a0a0;
+    --rotulo:"Bricolage Grotesque", system-ui, sans-serif;
+    --barra:64px;
+  }
+  *{box-sizing:border-box;margin:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--tinta);min-height:100vh;padding-bottom:calc(var(--barra) + env(safe-area-inset-bottom))}
+  button,input,select,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--mostaza);outline-offset:2px}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* Encabezado */
+  header.cab{background:var(--verde);color:#fff;padding:14px 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+  header.cab h1{font-family:var(--rotulo);font-weight:800;font-size:1.35rem;letter-spacing:-.01em;flex:1;line-height:1.1}
+  header.cab small{display:block;font-family:system-ui,sans-serif;font-weight:500;font-size:.78rem;color:#cfe5d6}
+  .sinred{background:var(--mostaza);color:#3a2a00;font-size:.72rem;font-weight:700;padding:4px 8px;border-radius:6px}
+
+  main{padding:14px 16px 24px;max-width:720px;margin:0 auto}
+  h2{font-family:var(--rotulo);font-weight:800;font-size:1.25rem;margin:4px 0 12px}
+  .ayuda{color:var(--gris);font-size:.88rem;line-height:1.45}
+
+  /* Controles */
+  .campo{display:block;margin-bottom:10px}
+  .campo span{display:block;font-size:.82rem;color:var(--gris);margin-bottom:4px}
+  input,select,textarea{width:100%;background:var(--blanco);border:2px solid var(--linea);border-radius:10px;padding:11px 12px;font-size:1rem}
+  input:focus,select:focus,textarea:focus{border-color:var(--verde2);outline:none}
+  .fila{display:flex;gap:8px;align-items:flex-end}.fila>*{flex:1;min-width:0}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:12px 14px;font-weight:700;font-size:.98rem;cursor:pointer;background:var(--blanco);border:2px solid var(--linea);color:var(--tinta);text-decoration:none}
+  .btn.prim{background:var(--verde);border-color:var(--verde);color:#fff}
+  .btn.cobrar{background:var(--mostaza);border-color:var(--mostaza);color:#2b2000;font-family:var(--rotulo);font-weight:800;font-size:1.15rem}
+  .btn.peligro{color:var(--rojo);border-color:#f0c7c3}
+  .btn.ancho{width:100%}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:active:not(:disabled){transform:scale(.98)}
+  .icono{width:46px;flex:none;padding:10px}
+
+  /* Barra de secciones */
+  nav.barra{position:fixed;left:0;right:0;bottom:0;height:calc(var(--barra) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--blanco);border-top:1px solid var(--linea);display:flex;z-index:30}
+  nav.barra button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.72rem;font-weight:600;color:var(--gris);cursor:pointer}
+  nav.barra button b{font-size:1.35rem;line-height:1}
+  nav.barra button[aria-current="page"]{color:var(--verde)}
+  nav.barra button[aria-current="page"]::after{content:"";width:28px;height:3px;border-radius:2px;background:var(--verde);margin-top:2px}
+
+  /* Vender */
+  .buscador{display:flex;gap:8px;margin-bottom:12px}
+  .rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+  .prod{background:var(--blanco);border:2px solid var(--linea);border-radius:12px;padding:10px 8px;text-align:left;cursor:pointer;min-height:84px;display:flex;flex-direction:column;justify-content:space-between}
+  .prod .n{font-size:.88rem;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .prod .p{font-family:var(--rotulo);font-weight:800;font-size:1.1rem;color:var(--verde)}
+  .prod .s{font-size:.72rem;color:var(--gris)}
+  .prod.bajo .s{color:var(--rojo);font-weight:700}
+  .prod.agotado{opacity:.55}
+  .carrito{position:fixed;left:0;right:0;bottom:calc(var(--barra) + env(safe-area-inset-bottom));background:var(--blanco);border-top:3px solid var(--verde);box-shadow:0 -6px 18px rgba(20,83,45,.12);z-index:25;max-height:55vh;display:flex;flex-direction:column}
+  .carrito .lista{overflow:auto;padding:4px 16px}
+  .renglon{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--linea)}
+  .renglon .nom{flex:1;font-size:.92rem;line-height:1.2}
+  .renglon .nom small{display:block;color:var(--gris)}
+  .cant{display:flex;align-items:center;gap:4px}
+  .cant button{width:34px;height:34px;border-radius:8px;border:2px solid var(--linea);background:var(--fondo);font-weight:800;cursor:pointer}
+  .cant span{min-width:28px;text-align:center;font-weight:700}
+  .renglon .imp{min-width:72px;text-align:right;font-weight:700}
+  .pie-carrito{display:flex;align-items:center;gap:12px;padding:10px 16px 12px}
+  .pie-carrito .tot{flex:1}
+  .pie-carrito .tot small{display:block;font-size:.78rem;color:var(--gris)}
+  .pie-carrito .tot b{font-family:var(--rotulo);font-weight:800;font-size:2rem;line-height:1}
+  .relleno-carrito{height:150px}
+
+  /* Tarjetas de lista */
+  .item{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;cursor:pointer;width:100%;text-align:left}
+  .item .t{flex:1;min-width:0}
+  .item .t b{display:block;font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .t small{color:var(--gris);font-size:.8rem}
+  .item .d{text-align:right;font-weight:800;font-family:var(--rotulo)}
+  .alerta{background:#fff4d6;border:1px solid #f1d27a;color:#5a4300;border-radius:10px;padding:10px 12px;font-size:.88rem;margin-bottom:12px}
+  .alerta.roja{background:#fdecea;border-color:#f3b8b2;color:#7a1810}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{border:2px solid var(--linea);background:var(--blanco);border-radius:999px;padding:7px 12px;font-size:.85rem;font-weight:600;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--verde);border-color:var(--verde);color:#fff}
+
+  /* El cuaderno del fiado: lo distintivo de la app */
+  .cuaderno{background:var(--blanco);border-radius:6px 14px 14px 6px;box-shadow:0 1px 0 var(--linea),0 8px 20px rgba(28,36,32,.08);position:relative;padding:6px 0 10px;
+    background-image:linear-gradient(to right,transparent 46px,var(--margen) 46px,var(--margen) 48px,transparent 48px),repeating-linear-gradient(to bottom,transparent 0,transparent 43px,var(--azul-renglon) 43px,var(--azul-renglon) 44px);
+    background-position:0 0,0 10px}
+  .cuaderno::before{content:"";position:absolute;left:12px;top:14px;bottom:14px;width:12px;background:radial-gradient(circle,#c8d2cb 4px,transparent 5px) 0 0/12px 44px repeat-y}
+  .cuaderno .hoja-tit{font-family:var(--rotulo);font-weight:800;font-size:1.15rem;padding:6px 14px 8px 60px;height:44px;display:flex;align-items:center}
+  .cuaderno .cuenta{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px 0 60px;cursor:pointer;width:100%;border:0;background:none;text-align:left}
+  .cuaderno .cuenta .quien{flex:1;font-size:1.02rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cuaderno .cuenta .quien small{font-weight:400;color:var(--gris);font-size:.78rem;margin-left:6px}
+  .cuaderno .cuenta .debe{font-family:var(--rotulo);font-weight:800;font-size:1.1rem;color:var(--rojo)}
+  .cuaderno .cuenta .debe.cero{color:var(--verde)}
+  .cuaderno .mov{display:flex;gap:8px;height:44px;align-items:center;padding:0 14px 0 60px;font-size:.92rem}
+  .cuaderno .mov .f{width:64px;color:var(--gris);font-size:.8rem}
+  .cuaderno .mov .c{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cuaderno .mov .m{font-weight:700}
+  .cuaderno .mov .m.cargo{color:var(--rojo)} .cuaderno .mov .m.abono{color:var(--verde)}
+  .vacio{padding:0 14px 0 60px;height:88px;display:flex;align-items:center;color:var(--gris);font-size:.92rem}
+  .saldo-grande{text-align:center;padding:10px 0 14px}
+  .saldo-grande small{color:var(--gris)}
+  .saldo-grande b{display:block;font-family:var(--rotulo);font-weight:800;font-size:2.6rem;color:var(--rojo);line-height:1.1}
+  .saldo-grande b.cero{color:var(--verde)}
+  .barra-limite{height:10px;background:var(--linea);border-radius:99px;overflow:hidden;margin:6px 0 2px}
+  .barra-limite i{display:block;height:100%;background:var(--verde2)}
+  .barra-limite i.lleno{background:var(--rojo)}
+
+  /* Corte y reportes */
+  .cifras{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .cifra{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px}
+  .cifra small{display:block;color:var(--gris);font-size:.8rem}
+  .cifra b{font-family:var(--rotulo);font-weight:800;font-size:1.35rem}
+  .cifra.grande{grid-column:1/-1;background:var(--verde);color:#fff;border-color:var(--verde)}
+  .cifra.grande small{color:#cfe5d6} .cifra.grande b{font-size:2rem}
+  .tabla{width:100%;border-collapse:collapse;background:var(--blanco);border-radius:12px;overflow:hidden;font-size:.92rem;margin-bottom:12px}
+  .tabla td{padding:9px 12px;border-bottom:1px solid var(--linea)}
+  .tabla td:last-child{text-align:right;font-weight:700}
+  .dif-ok{color:var(--verde);font-weight:800} .dif-mal{color:var(--rojo);font-weight:800}
+  canvas.grafica{width:100%;height:180px;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:12px;display:block}
+  .seccion{margin:18px 0 8px;font-family:var(--rotulo);font-weight:800;font-size:1.05rem}
+
+  /* Ventana emergente */
+  dialog{border:0;border-radius:16px 16px 0 0;padding:0;width:100%;max-width:720px;margin:auto auto 0;max-height:92vh;background:var(--fondo);color:var(--tinta)}
+  dialog::backdrop{background:rgba(14,30,20,.55)}
+  dialog .dcab{display:flex;align-items:center;padding:14px 16px;background:var(--blanco);border-bottom:1px solid var(--linea);position:sticky;top:0;z-index:2}
+  dialog .dcab h3{flex:1;font-family:var(--rotulo);font-weight:800;font-size:1.15rem}
+  dialog .dcab button{border:0;background:none;font-size:1.5rem;cursor:pointer;padding:0 6px;color:var(--gris)}
+  dialog .dcuerpo{padding:14px 16px 22px;overflow:auto}
+  @media (min-width:740px){dialog{border-radius:16px;margin:auto}}
+
+  /* Cobro */
+  .pagos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .pago{border:2px solid var(--linea);background:var(--blanco);border-radius:12px;padding:12px 8px;font-weight:700;cursor:pointer;font-size:.95rem}
+  .pago[aria-pressed="true"]{border-color:var(--verde);background:#e3f1e7}
+  .billetes{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+  .billetes button{border:2px solid var(--linea);background:var(--blanco);border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer}
+  .cambio{font-family:var(--rotulo);font-weight:800;font-size:1.6rem;text-align:center;padding:10px;border-radius:12px;background:var(--blanco);margin-bottom:12px}
+
+  /* Escáner */
+  .escaner{position:fixed;inset:0;background:#000;z-index:60;display:none;flex-direction:column}
+  .escaner.abierto{display:flex}
+  .escaner video{flex:1;object-fit:cover;width:100%;min-height:0}
+  .escaner .mira{position:absolute;left:12%;right:12%;top:32%;height:22%;border:3px solid var(--mostaza);border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);pointer-events:none}
+  .escaner .barra-esc{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#0b1a11}
+  .escaner .ultimo{position:absolute;left:16px;right:16px;top:16px;background:rgba(255,255,255,.95);color:var(--tinta);border-radius:12px;padding:10px 12px;font-weight:700;text-align:center;display:none}
+  .escaner .ultimo.ver{display:block}
+
+  .aviso{position:fixed;left:16px;right:16px;top:calc(76px + env(safe-area-inset-top));background:var(--tinta);color:#fff;font-weight:600;padding:12px 14px;border-radius:12px;text-align:center;z-index:70;opacity:0;transform:translateY(12px);transition:opacity .2s,transform .2s;pointer-events:none}
+  .aviso.ver{opacity:1;transform:none}
+  .aviso{transform:translateY(-12px)}.aviso.ver{transform:none}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="cab">
+  <h1 id="tituloNegocio">Caja Guizar<small>Punto de venta y fiado</small></h1>
+  <span class="sinred" id="sinRed" hidden>Sin internet · todo se guarda</span>
+</header>
+
+<main id="vista" aria-live="polite"></main>
+
+<nav class="barra" aria-label="Secciones">
+  <button data-tab="vender" aria-current="page"><b aria-hidden="true">🛒</b>Vender</button>
+  <button data-tab="productos"><b aria-hidden="true">📦</b>Productos</button>
+  <button data-tab="fiado"><b aria-hidden="true">📒</b>Fiado</button>
+  <button data-tab="corte"><b aria-hidden="true">💰</b>Corte</button>
+  <button data-tab="mas"><b aria-hidden="true">📊</b>Reportes</button>
+</nav>
+
+<dialog id="modal"><div class="dcab"><h3 id="modalTit"></h3><button type="button" id="modalCerrar" aria-label="Cerrar">×</button></div><div class="dcuerpo" id="modalCuerpo"></div></dialog>
+
+<div class="escaner" id="escaner" role="dialog" aria-label="Escáner de códigos">
+  <video id="video" playsinline muted></video>
+  <div class="mira"></div>
+  <div class="ultimo" id="ultimoEscaneo"></div>
+  <div class="barra-esc">
+    <button class="btn ancho" id="escTeclear">⌨️ Teclear código</button>
+    <button class="btn prim ancho" id="escListo">Listo</button>
+  </div>
+</div>
+
+<div class="aviso" id="aviso" role="status"></div>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

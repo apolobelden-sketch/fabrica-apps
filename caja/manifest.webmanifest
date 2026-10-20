@@ -1,0 +1,16 @@
+{
+  "name": "Caja Guizar · punto de venta y fiado",
+  "short_name": "Caja",
+  "description": "Vende escaneando con la cámara, lleva el fiado, inventario y corte de caja. Funciona sin internet.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef4ef",
+  "theme_color": "#14532d",
+  "lang": "es-MX",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
