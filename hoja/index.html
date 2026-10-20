@@ -108,6 +108,9 @@
       <option value="wa">WhatsApp del negocio</option>
       <option value="perfil">Perfil en Plaza Emprende</option>
     </select>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:.95rem;color:var(--texto)"><input type="checkbox" id="contar" style="width:22px;height:22px;accent-color:var(--oro)"> 📊 Contar escaneos</label>
+    <div id="cajaLugar"><label for="lugar">¿Dónde vas a pegar esta hoja?</label><input id="lugar" placeholder="Ej. Mostrador, Tortillería Lupita, Volante"></div>
+    <p class="msg" id="msgContar">Cada QR pasa por tu contador y luego abre WhatsApp igual. Así sabes qué producto y qué lugar te trae clientes.</p>
   </section>
 
   <section class="caja">
@@ -148,7 +151,7 @@ function qrSvg(texto) {
 }
 
 // ---------- Estado (se guarda en el teléfono) ----------
-let est = { slug: "", nombre: "", lema: "", wa: "", color: "#3b1466", general: "wa", diseno: "fotos", productos: [] };
+let est = { slug: "", nombre: "", lema: "", wa: "", color: "#3b1466", general: "wa", diseno: "fotos", productos: [], contar: true, lugar: "" };
 try { Object.assign(est, JSON.parse(localStorage.getItem("hojaqr") || "{}")); } catch (e) {}
 const guardar = () => { try { localStorage.setItem("hojaqr", JSON.stringify(est)); } catch (e) {} };
 const numWa = () => { const d = String(est.wa || "").replace(/\D/g, ""); return d.length === 10 ? "52" + d : d; };
@@ -157,6 +160,43 @@ const enlacePedido = (p) => `https://wa.me/${numWa()}?text=${encodeURIComponent(
 const enlaceGeneral = () => est.general === "perfil" && est.slug ? PLAZA + est.slug : `https://wa.me/${numWa()}?text=${encodeURIComponent("Hola, vi su hoja de productos. Quiero información.")}`;
 
 // Llenar campos
+const Q = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/q";
+$("contar").checked = est.contar !== false; $("lugar").value = est.lugar || "";
+$("cajaLugar").hidden = !$("contar").checked;
+$("contar").onchange = () => { est.contar = $("contar").checked; $("cajaLugar").hidden = !est.contar; guardar(); pintar(); };
+let tl; $("lugar").oninput = () => { est.lugar = $("lugar").value; guardar(); clearTimeout(tl); tl = setTimeout(pintar, 600); };
+// Códigos del contador: se piden al servidor una vez y se recuerdan
+let codigos = {}; try { codigos = JSON.parse(localStorage.getItem("hojaqr_codigos") || "{}"); } catch (e) {}
+const negocioId = () => (est.slug || String(est.nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")).slice(0, 60);
+const llaveCod = (destino) => `${negocioId()}|${(est.lugar || "").trim()}|${destino}`;
+let pidiendo = false;
+async function pedirCodigos(faltan) {
+  if (pidiendo) return; pidiendo = true;
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch(Q + "?accion=crear", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
+      body: JSON.stringify({ lista: faltan.map((f) => ({ destino: f.destino, negocio: negocioId(), producto: f.producto, lugar: (est.lugar || "").trim() })) }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "error");
+    d.codigos.forEach((c, i) => { codigos[llaveCod(faltan[i].destino)] = c.url; });
+    try { localStorage.setItem("hojaqr_codigos", JSON.stringify(codigos)); } catch (e) {}
+    $("msgContar").className = "msg"; $("msgContar").textContent = "✅ Contador activo en todos los QR de esta hoja.";
+    pidiendo = false; pintar();
+  } catch (e) {
+    pidiendo = false;
+    $("msgContar").className = "msg mal"; $("msgContar").textContent = "⚠️ Sin señal para activar el contador: los QR funcionan, pero sin contar. Vuelve a intentar con señal antes de imprimir.";
+  }
+}
+// Devuelve el enlace que va dentro del QR (con contador si está listo)
+let faltantes = [];
+function enlaceQR(destino, producto) {
+  if (!est.contar || !negocioId()) return destino;
+  const u = codigos[llaveCod(destino)];
+  if (u) return u;
+  faltantes.push({ destino, producto });
+  return destino;
+}
+
 for (const k of ["slug", "nombre", "lema", "wa", "color", "general"]) {
   $(k).value = est[k] || (k === "color" ? "#3b1466" : k === "general" ? "wa" : "");
   $(k).addEventListener("input", () => { est[k] = $(k).value; guardar(); pintar(); });
@@ -206,22 +246,23 @@ $("agregar").onclick = () => { est.productos.push({ si: true, titulo: "", precio
 // ---------- Dibujar la hoja ----------
 function cabecera() {
   return `<div class="h-cab"><div class="tit"><h3>${esc(est.nombre || "Mi negocio")}</h3><p>${esc(est.lema || "Escanea el QR del producto y tu pedido llega directo a WhatsApp")}</p><p><b>WhatsApp: ${esc(telBonito())}</b></p></div>
-    <div class="qrp"><div class="qr">${qrSvg(enlaceGeneral())}</div>${est.general === "perfil" ? "Ver todo" : "Escríbenos"}</div></div>`;
+    <div class="qrp"><div class="qr">${qrSvg(enlaceQR(enlaceGeneral(), "QR general"))}</div>${est.general === "perfil" ? "Ver todo" : "Escríbenos"}</div></div>`;
 }
 function tarjetaHoja(p) {
   const precio = p.precio !== "" ? `<div class="pr">${pesos(p.precio)}${p.antes ? `<s>${pesos(p.antes)}</s>` : ""}</div>` : "";
   const foto = p.foto ? `<img class="foto" src="${esc(ligera(p.foto))}" alt="">` : "";
   return `<div class="t">${foto}<div class="info"><div class="txt"><h4>${esc(p.titulo || "Producto")}</h4>${precio}${p.desc ? `<div class="d">${esc(p.desc)}</div>` : ""}</div>
-    <div class="qrbox"><div class="qr">${qrSvg(enlacePedido(p))}</div><span>Escanea<br>y pide</span></div></div></div>`;
+    <div class="qrbox"><div class="qr">${qrSvg(enlaceQR(enlacePedido(p), p.titulo))}</div><span>Escanea<br>y pide</span></div></div></div>`;
 }
 function pintar() {
   document.documentElement.style.setProperty("--c", est.color || "#3b1466");
   const prods = est.productos.filter((p) => p.si && (p.titulo || "").trim());
+  faltantes = [];
   let html = "";
   if (!numWa()) html = `<div class="hoja"><p style="font-size:6mm;color:#777;text-align:center;margin-top:40mm">Escribe el WhatsApp del negocio para crear los QR</p></div>`;
   else if (est.diseno === "cartel") {
     html = `<div class="hoja cartel"><div class="grande">${esc(est.nombre || "Mi negocio")}</div><div class="sub">${esc(est.lema || "¡Escanea y haz tu pedido por WhatsApp!")}</div>
-      <div class="qr">${qrSvg(enlaceGeneral())}</div><div class="tel">📱 ${esc(telBonito())}</div>
+      <div class="qr">${qrSvg(enlaceQR(enlaceGeneral(), "QR general"))}</div><div class="tel">📱 ${esc(telBonito())}</div>
       ${prods.length ? `<ul>${prods.slice(0, 5).map((p) => `<li>${esc(p.titulo)} ${p.precio !== "" ? `· <b>${pesos(p.precio)}</b>` : ""}</li>`).join("")}</ul>` : ""}</div>`;
   } else {
     const porHoja = est.diseno === "lista" ? 9 : 6;
@@ -234,6 +275,7 @@ function pintar() {
   }
   $("hojas").innerHTML = html;
   ajustar();
+  if (faltantes.length) { $("msgContar").className = "msg"; $("msgContar").textContent = "Activando contador…"; pedirCodigos(faltantes.slice(0, 40)); }
 }
 function ajustar() {
   const e = $("escala"), hoja = $("hojas").firstElementChild; if (!hoja) return;
@@ -241,7 +283,10 @@ function ajustar() {
   e.style.transform = `scale(${k})`; e.style.height = $("hojas").offsetHeight * k + "px";
 }
 addEventListener("resize", ajustar);
-$("imprimir").onclick = () => window.print();
+$("imprimir").onclick = () => {
+  if (est.contar && faltantes.length && !confirm("El contador todavía no está activo (falta señal). ¿Imprimir así? Los QR funcionan pero no contarán.")) return;
+  window.print();
+};
 
 listar(); pintar();
 if (est.slug && !est.productos.length) cargarPlaza();

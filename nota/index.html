@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nota de venta · Ediciones Guizar</title>
+<meta name="theme-color" content="#3b1466">
+<meta name="description" content="Haz una nota de venta con folio, logo y total, y mándala por WhatsApp en un toque.">
+<style>
+  :root{--fondo:#1e0b36;--tarjeta:#2b1250;--borde:#4a2580;--oro:#f2c14e;--texto:#f7f1ff;--suave:#c9b6e8}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--texto);padding:16px 16px 40px}
+  h1{font-size:1.3rem;color:var(--oro)} .sub{color:var(--suave);font-size:.88rem;margin:4px 0 14px;line-height:1.4}
+  .caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:14px;padding:14px;margin-bottom:14px}
+  .caja h2{font-size:.95rem;color:var(--oro);margin-bottom:10px}
+  label{display:block;font-size:.8rem;color:var(--suave);margin:8px 0 4px}
+  input,select{width:100%;background:#1a0930;border:1.5px solid var(--borde);color:var(--texto);border-radius:10px;padding:10px;font-size:1rem;font-family:inherit}
+  .fila{display:flex;gap:8px;align-items:flex-end}.fila>*{flex:1}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:13px;font-weight:700;font-size:.98rem;cursor:pointer;font-family:inherit;width:100%}
+  .oro{background:var(--oro);color:#2a0f47}.linea{background:transparent;color:var(--texto);border:1.5px solid var(--borde)}
+  .msg{font-size:.85rem;color:var(--suave);margin-top:8px}.msg.mal{color:#ff9a9a}
+  .part{display:grid;grid-template-columns:1fr 58px 84px 28px;gap:6px;margin-top:8px}
+  .part input{padding:9px;font-size:.92rem}
+  .x{background:none;border:0;color:var(--suave);font-size:1.2rem;cursor:pointer}
+  .total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:1.2rem;font-weight:800}
+  .total b{color:var(--oro);font-size:1.6rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chip{border:1.5px solid var(--borde);background:#1a0930;color:var(--texto);border-radius:999px;padding:7px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+  .chip.si{background:var(--oro);border-color:var(--oro);color:#2a0f47;font-weight:700}
+  #lienzo{width:100%;max-width:420px;display:block;margin:0 auto;border-radius:12px;background:#fff}
+  details summary{cursor:pointer;color:var(--suave);font-size:.88rem}
+  .aviso{position:fixed;left:16px;right:16px;bottom:20px;background:#36c275;color:#06210f;font-weight:700;padding:13px;border-radius:12px;text-align:center;opacity:0;transform:translateY(20px);transition:.25s;pointer-events:none;z-index:9}
+  .aviso.ver{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<h1>🧾 Nota de venta</h1>
+<p class="sub">Llena la venta y te sale una <b>nota bonita con folio, logo y total</b>, lista para mandarla al cliente por WhatsApp.</p>
+
+<section class="caja">
+  <h2>Venta</h2>
+  <label for="cliente">Cliente</label><input id="cliente" placeholder="Nombre del cliente (opcional)">
+  <div id="partidas"></div>
+  <button class="btn linea" id="agregar" style="margin-top:10px">➕ Agregar renglón</button>
+  <div id="rapidos" class="chips"></div>
+  <label>Forma de pago</label>
+  <div class="chips" id="pagos">
+    <button class="chip si" data-p="Efectivo">💵 Efectivo</button>
+    <button class="chip" data-p="Transferencia">🏦 Transferencia</button>
+    <button class="chip" data-p="Tarjeta">💳 Tarjeta</button>
+    <button class="chip" data-p="Pendiente">⏳ Pendiente</button>
+  </div>
+  <label for="notas">Nota (opcional)</label><input id="notas" placeholder="Ej. Entrega el viernes">
+  <div class="total"><span>Total</span><b id="total">$0</b></div>
+  <button class="btn oro" id="hacer" style="margin-top:12px">🧾 Hacer nota</button>
+  <p class="msg" id="msg"></p>
+</section>
+
+<section class="caja" id="resultado" hidden>
+  <canvas id="lienzo"></canvas>
+  <div style="margin-top:12px"><button class="btn oro" id="enviar">📤 Mandar por WhatsApp</button></div>
+  <div class="fila" style="margin-top:8px">
+    <button class="btn linea" id="guardar">⬇️ Guardar</button>
+    <button class="btn linea" id="nueva">➕ Nueva nota</button>
+  </div>
+</section>
+
+<section class="caja">
+  <details>
+    <summary>⚙️ Datos del negocio y guardado</summary>
+    <label for="nombre">Nombre del negocio</label><input id="nombre" placeholder="Ediciones Guizar">
+    <label for="wa">WhatsApp</label><input id="wa" inputmode="numeric" placeholder="6311949491">
+    <label for="slug">Productos de Plaza Emprende (para agregarlos con un toque)</label>
+    <div class="fila"><input id="slug" placeholder="ediciones-guizar" autocapitalize="off"><button class="btn linea" id="cargar" style="flex:none;width:100px">Cargar</button></div>
+    <label for="clave">Código de dueño (para guardar tus ventas y que el Director las cuente)</label>
+    <input id="clave" type="password" autocomplete="off" placeholder="Tu código de acceso">
+    <p class="msg">Sin código, la nota se hace igual con un folio de este teléfono, pero no se guarda en tu historial.</p>
+  </details>
+</section>
+<div class="aviso" id="aviso"></div>
+
+<script>
+const Q = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/q";
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/red";
+const LOGO = "https://res.cloudinary.com/dgdw8fbku/image/upload/f_auto,q_auto,w_220,h_220,c_fill/ediciones-guizar/servicios/logo-eg.jpg";
+const $ = (id) => document.getElementById(id);
+const pesos = (n) => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function avisar(t) { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("ver"), 2600); }
+
+let est = { nombre: "Ediciones Guizar", wa: "6311949491", slug: "ediciones-guizar", clave: "", folioLocal: 0, productos: [] };
+try { Object.assign(est, JSON.parse(localStorage.getItem("notaventa") || "{}")); } catch (e) {}
+const guardarEst = () => { try { localStorage.setItem("notaventa", JSON.stringify(est)); } catch (e) {} };
+for (const k of ["nombre", "wa", "slug", "clave"]) { $(k).value = est[k] || ""; $(k).oninput = () => { est[k] = $(k).value.trim(); guardarEst(); }; }
+
+let partidas = [{ producto: "", cantidad: 1, precio: "" }], pago = "Efectivo", ultima = null;
+let logo = null; (() => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => { logo = i; }; i.src = LOGO; })();
+
+function listar() {
+  $("partidas").innerHTML = partidas.map((p, i) => `<div class="part" data-i="${i}">
+    <input data-k="producto" value="${esc(p.producto)}" placeholder="Producto">
+    <input data-k="cantidad" value="${esc(p.cantidad)}" inputmode="decimal" placeholder="Cant.">
+    <input data-k="precio" value="${esc(p.precio)}" inputmode="decimal" placeholder="Precio">
+    <button class="x" data-quitar="${i}" aria-label="Quitar">✕</button></div>`).join("");
+  sumar();
+}
+const totalDe = () => partidas.reduce((s, p) => s + (Number(p.cantidad) || 0) * (Number(p.precio) || 0), 0);
+const sumar = () => { $("total").textContent = pesos(totalDe()); };
+$("partidas").addEventListener("input", (e) => { const f = e.target.closest(".part"); if (!f) return; partidas[f.dataset.i][e.target.dataset.k] = e.target.value; sumar(); });
+$("partidas").addEventListener("click", (e) => { const q = e.target.dataset.quitar; if (q != null) { partidas.splice(Number(q), 1); if (!partidas.length) partidas.push({ producto: "", cantidad: 1, precio: "" }); listar(); } });
+$("agregar").onclick = () => { partidas.push({ producto: "", cantidad: 1, precio: "" }); listar(); };
+document.querySelectorAll("#pagos .chip").forEach((b) => b.onclick = () => { pago = b.dataset.p; document.querySelectorAll("#pagos .chip").forEach((x) => x.classList.toggle("si", x === b)); });
+
+// Productos de la Plaza como botones rápidos
+function rapidos() {
+  $("rapidos").innerHTML = est.productos.slice(0, 12).map((p, i) => `<button class="chip" data-r="${i}">+ ${esc(p.titulo.length > 26 ? p.titulo.slice(0, 25) + "…" : p.titulo)}</button>`).join("");
+}
+$("rapidos").onclick = (e) => {
+  const b = e.target.closest("[data-r]"); if (!b) return; const p = est.productos[b.dataset.r];
+  const vacia = partidas.findIndex((x) => !x.producto);
+  const fila = { producto: p.titulo, cantidad: 1, precio: p.precio ?? "" };
+  if (vacia >= 0) partidas[vacia] = fila; else partidas.push(fila); listar();
+};
+async function cargar() {
+  const slug = (est.slug || "").toLowerCase().replace(/[^a-z0-9-]/g, ""); if (!slug) return;
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch(FN + "?accion=negocio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }), signal: ctl.signal });
+    const d = await r.json(); if (!r.ok) return;
+    est.productos = (d.publicaciones || []).map((p) => ({ titulo: p.titulo, precio: p.precio })); guardarEst(); rapidos();
+  } catch (e) {}
+}
+$("cargar").onclick = cargar;
+
+// ---------- Dibujo de la nota ----------
+function lineas(ctx, t, ancho, max) { const out = []; let l = ""; for (const p of String(t).split(/\s+/)) { const x = l ? l + " " + p : p; if (ctx.measureText(x).width > ancho && l) { out.push(l); l = p; } else l = x; } if (l) out.push(l); return out.slice(0, max); }
+function dibujar(n) {
+  const cv = $("lienzo"), ctx = cv.getContext("2d"), W = 1080;
+  ctx.font = "600 38px system-ui, sans-serif";
+  const filas = n.partidas.map((p) => ({ ...p, ls: lineas(ctx, p.producto, 560, 3) }));
+  const H = 600 + filas.reduce((s, f) => s + 84 + f.ls.length * 46, 0) + 300 + (n.notas ? 70 : 0);
+  cv.width = W; cv.height = H;
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  // Encabezado
+  ctx.fillStyle = "#3b1466"; ctx.fillRect(0, 0, W, 250);
+  ctx.fillStyle = "#f2c14e"; ctx.fillRect(0, 250, W, 10);
+  if (logo) { ctx.save(); ctx.beginPath(); ctx.arc(150, 125, 85, 0, 7); ctx.clip(); ctx.drawImage(logo, 65, 40, 170, 170); ctx.restore(); }
+  const x0 = logo ? 270 : 70;
+  ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.font = "800 62px system-ui, sans-serif"; ctx.fillText(n.negocio, x0, 120);
+  ctx.font = "500 36px system-ui, sans-serif"; ctx.fillStyle = "#e6dcf5"; ctx.fillText("WhatsApp " + n.tel, x0, 178);
+  // Folio y datos
+  ctx.fillStyle = "#3b1466"; ctx.font = "900 50px system-ui, sans-serif"; ctx.fillText("NOTA DE VENTA", 70, 340);
+  ctx.textAlign = "right"; ctx.fillStyle = "#c0392b"; ctx.fillText("Folio " + String(n.folio).padStart(4, "0"), W - 70, 340);
+  ctx.textAlign = "left"; ctx.fillStyle = "#444"; ctx.font = "500 34px system-ui, sans-serif";
+  ctx.fillText("Fecha: " + n.fecha, 70, 400);
+  if (n.cliente) ctx.fillText("Cliente: " + n.cliente, 70, 450);
+  // Tabla
+  let y = 510;
+  ctx.fillStyle = "#f2eef8"; ctx.fillRect(50, y - 46, W - 100, 62);
+  ctx.fillStyle = "#3b1466"; ctx.font = "800 32px system-ui, sans-serif";
+  ctx.fillText("Producto", 70, y); ctx.textAlign = "center"; ctx.fillText("Cant.", 720, y); ctx.textAlign = "right"; ctx.fillText("Importe", W - 70, y);
+  y += 60;
+  for (const f of filas) {
+    ctx.textAlign = "left"; ctx.fillStyle = "#1a1024"; ctx.font = "600 38px system-ui, sans-serif";
+    f.ls.forEach((l, i) => ctx.fillText(l, 70, y + i * 46));
+    ctx.fillStyle = "#666"; ctx.font = "500 28px system-ui, sans-serif"; ctx.fillText(pesos(f.precio) + " c/u", 70, y + f.ls.length * 46);
+    ctx.textAlign = "center"; ctx.fillStyle = "#1a1024"; ctx.font = "600 38px system-ui, sans-serif"; ctx.fillText(String(f.cantidad), 720, y);
+    ctx.textAlign = "right"; ctx.fillText(pesos(f.cantidad * f.precio), W - 70, y);
+    const linea = y + f.ls.length * 46 + 22;
+    ctx.fillStyle = "#e5e0ee"; ctx.fillRect(70, linea, W - 140, 2);
+    y = linea + 62;
+  }
+  // Total
+  y += 50;
+  ctx.fillStyle = "#3b1466"; ctx.fillRect(560, y - 70, W - 610, 110);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.font = "800 44px system-ui, sans-serif"; ctx.fillText("TOTAL", 590, y);
+  ctx.textAlign = "right"; ctx.fillStyle = "#f2c14e"; ctx.font = "900 56px system-ui, sans-serif"; ctx.fillText(pesos(n.total), W - 80, y + 2);
+  ctx.textAlign = "left"; ctx.fillStyle = "#444"; ctx.font = "600 34px system-ui, sans-serif"; ctx.fillText("Pago: " + n.pago, 70, y);
+  y += 100;
+  if (n.notas) { ctx.font = "italic 500 32px system-ui, sans-serif"; ctx.fillStyle = "#555"; ctx.fillText("Nota: " + n.notas, 70, y); y += 70; }
+  ctx.textAlign = "center"; ctx.fillStyle = "#3b1466"; ctx.font = "700 38px system-ui, sans-serif"; ctx.fillText("¡Gracias por tu compra! 💜", W / 2, y + 20);
+}
+
+$("hacer").onclick = async () => {
+  const ps = partidas.map((p) => ({ producto: String(p.producto).trim(), cantidad: Number(p.cantidad) || 0, precio: Number(p.precio) || 0 })).filter((p) => p.producto && p.cantidad > 0);
+  if (!ps.length) { $("msg").className = "msg mal"; $("msg").textContent = "Agrega al menos un producto con cantidad."; return; }
+  $("hacer").disabled = true; $("msg").className = "msg"; $("msg").textContent = "Haciendo la nota…";
+  let folio = null, guardada = false;
+  if (est.clave) {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
+      const r = await fetch(Q + "?accion=nota", { method: "POST", headers: { "Content-Type": "application/json", "x-fabrica-clave": est.clave }, signal: ctl.signal,
+        body: JSON.stringify({ cliente: $("cliente").value, partidas: ps, pago, notas: $("notas").value }) });
+      const d = await r.json();
+      if (r.ok) { folio = d.folio; guardada = true; }
+      else if (d.candado) $("msg").textContent = "⚠️ El código de dueño no es correcto; la nota se hizo sin guardar.";
+    } catch (e) { $("msg").textContent = "⚠️ Sin señal: la nota se hizo sin guardar en tu historial."; }
+  }
+  if (!folio) { est.folioLocal = (est.folioLocal || 0) + 1; guardarEst(); folio = "L" + est.folioLocal; }
+  const t = String(est.wa || "").replace(/\D/g, "").slice(-10);
+  ultima = { negocio: est.nombre || "Mi negocio", tel: t.length === 10 ? `${t.slice(0, 3)} ${t.slice(3, 6)} ${t.slice(6)}` : est.wa, folio, cliente: $("cliente").value.trim(), partidas: ps, total: ps.reduce((s, p) => s + p.cantidad * p.precio, 0), pago, notas: $("notas").value.trim(), fecha: new Date().toLocaleString("es-MX", { timeZone: "America/Hermosillo", dateStyle: "medium", timeStyle: "short" }) };
+  dibujar(ultima);
+  $("resultado").hidden = false; $("resultado").scrollIntoView({ behavior: "smooth" });
+  if (guardada) { $("msg").textContent = `✅ Nota ${folio} guardada en tu historial.`; }
+  else if (!est.clave) $("msg").textContent = "Nota hecha (no se guardó en historial: falta tu código de dueño en ⚙️).";
+  $("hacer").disabled = false;
+};
+const archivo = () => new Promise((ok) => $("lienzo").toBlob((b) => ok(new File([b], `nota-${ultima.folio}.jpg`, { type: "image/jpeg" })), "image/jpeg", 0.92));
+$("enviar").onclick = async () => {
+  const f = await archivo();
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text: `Tu nota de venta ${ultima.folio} · Total ${pesos(ultima.total)}` }); } catch (e) { if (e.name !== "AbortError") avisar("No se pudo compartir; usa Guardar"); } }
+  else { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); avisar("Nota guardada; mándala desde tu galería"); }
+};
+$("guardar").onclick = async () => { const f = await archivo(); const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); avisar("Nota guardada ✅"); };
+$("nueva").onclick = () => { partidas = [{ producto: "", cantidad: 1, precio: "" }]; $("cliente").value = ""; $("notas").value = ""; $("resultado").hidden = true; $("msg").textContent = ""; listar(); scrollTo(0, 0); };
+
+listar(); rapidos(); if (!est.productos.length) cargar();
+</script>
+</body>
+</html>

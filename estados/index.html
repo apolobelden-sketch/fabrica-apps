@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estados de la semana · Ediciones Guizar</title>
+<meta name="theme-color" content="#3b1466">
+<meta name="description" content="Arma en un toque 7 imágenes para tu Estado de WhatsApp, una por día, con tus productos y precios.">
+<style>
+  :root{--fondo:#1e0b36;--tarjeta:#2b1250;--borde:#4a2580;--oro:#f2c14e;--texto:#f7f1ff;--suave:#c9b6e8}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--texto);padding:16px 16px 40px}
+  h1{font-size:1.3rem;color:var(--oro)} .sub{color:var(--suave);font-size:.88rem;margin:4px 0 14px;line-height:1.4}
+  .caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:14px;padding:14px;margin-bottom:14px}
+  .caja h2{font-size:.95rem;color:var(--oro);margin-bottom:10px}
+  label{display:block;font-size:.8rem;color:var(--suave);margin:8px 0 4px}
+  input,select{width:100%;background:#1a0930;border:1.5px solid var(--borde);color:var(--texto);border-radius:10px;padding:10px;font-size:1rem;font-family:inherit}
+  .fila{display:flex;gap:8px;align-items:flex-end}.fila>*{flex:1}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:13px;font-weight:700;font-size:.98rem;cursor:pointer;font-family:inherit;width:100%}
+  .oro{background:var(--oro);color:#2a0f47}.linea{background:transparent;color:var(--texto);border:1.5px solid var(--borde)}
+  .msg{font-size:.85rem;color:var(--suave);margin-top:8px}.msg.mal{color:#ff9a9a}
+  .dias{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+  .dia{flex:none;width:76px;scroll-snap-align:start;background:#1a0930;border:2px solid var(--borde);border-radius:10px;padding:4px;cursor:pointer;color:var(--texto);font-family:inherit;position:relative}
+  .dia canvas{width:100%;border-radius:6px;display:block}
+  .dia span{display:block;font-size:.72rem;margin-top:3px;text-align:center}
+  .dia.sel{border-color:var(--oro)}
+  .dia .hoy{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--oro);color:#2a0f47;font-size:.65rem;font-weight:800;padding:2px 6px;border-radius:99px}
+  #grande{width:100%;max-width:360px;display:block;margin:0 auto;border-radius:14px;background:#000}
+  .aviso{position:fixed;left:16px;right:16px;bottom:20px;background:#36c275;color:#06210f;font-weight:700;padding:13px;border-radius:12px;text-align:center;opacity:0;transform:translateY(20px);transition:.25s;pointer-events:none;z-index:9}
+  .aviso.ver{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<h1>📅 Estados de la semana</h1>
+<p class="sub">7 imágenes listas para tu <b>Estado de WhatsApp</b>, una por día. Arma la semana el domingo y cada día solo tocas <b>Publicar</b>.</p>
+
+<section class="caja">
+  <h2>1. Tus productos</h2>
+  <div class="fila">
+    <div><label for="slug">Negocio de Plaza Emprende</label><input id="slug" placeholder="ediciones-guizar" autocapitalize="off"></div>
+    <div style="flex:none;width:110px"><button class="btn oro" id="cargar">Cargar</button></div>
+  </div>
+  <div class="fila">
+    <div><label for="wa">WhatsApp</label><input id="wa" inputmode="numeric" placeholder="6311949491"></div>
+    <div><label for="color">Color</label><input id="color" type="color" value="#3b1466" style="height:46px;padding:4px"></div>
+  </div>
+  <p class="msg" id="msg">Trae tus productos con foto y precio desde tu perfil.</p>
+</section>
+
+<section class="caja">
+  <h2>2. Tu semana</h2>
+  <div class="dias" id="dias"></div>
+  <div id="editor" hidden>
+    <label for="producto">Producto del día</label><select id="producto"></select>
+    <label for="frase">Frase del día</label><input id="frase" maxlength="40">
+    <button class="btn linea" id="otraSemana" style="margin-top:10px">🔀 Revolver la semana</button>
+  </div>
+</section>
+
+<section class="caja" id="vista" hidden>
+  <canvas id="grande" width="1080" height="1920"></canvas>
+  <div style="margin-top:12px"><button class="btn oro" id="publicar">📤 Publicar en mi Estado</button></div>
+  <div class="fila" style="margin-top:8px">
+    <button class="btn linea" id="guardar">⬇️ Guardar</button>
+    <button class="btn linea" id="todas">⬇️ Guardar las 7</button>
+  </div>
+  <p class="msg">Al tocar Publicar elige <b>WhatsApp</b> y luego <b>Mi estado</b>.</p>
+</section>
+<div class="aviso" id="aviso"></div>
+
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/red";
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const ORDEN = [1, 2, 3, 4, 5, 6, 0]; // la semana empieza en lunes
+const FRASES = { 1: "¡Arranca la semana con esto!", 2: "Martes de oferta", 3: "Mitad de semana, date un gusto", 4: "Jueves de novedad", 5: "¡Viernes! Pide el tuyo", 6: "Sábado de compras", 0: "Domingo para consentirte" };
+const $ = (id) => document.getElementById(id);
+const pesos = (n) => n === "" || n == null || isNaN(n) ? "" : "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+const ligera = (u) => /^https:\/\/res\.cloudinary\.com\/dgdw8fbku\/image\/upload\//.test(u || "") ? u.replace(/\/image\/upload\/((?:[a-z]{1,3}_[^/]+\/)*)/, (_m, t) => `/image/upload/${t}f_auto,q_auto,w_900,c_limit/`) : (u || "");
+function avisar(t) { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("ver"), 2600); }
+const hoyDia = () => new Date(Date.now() - 7 * 3600_000).getUTCDay(); // hora de Sonora
+
+let est = { slug: "", wa: "", nombre: "", color: "#3b1466", productos: [], semana: {} };
+try { Object.assign(est, JSON.parse(localStorage.getItem("estados") || "{}")); } catch (e) {}
+const guardarEst = () => { try { localStorage.setItem("estados", JSON.stringify(est)); } catch (e) {} };
+const h = new URLSearchParams(location.hash.slice(1)); if (h.get("n")) est.slug = h.get("n").replace(/[^a-z0-9-]/g, "");
+for (const k of ["slug", "wa", "color"]) { $(k).value = est[k] || (k === "color" ? "#3b1466" : ""); $(k).oninput = () => { est[k] = $(k).value; guardarEst(); if (k !== "slug") pintarTodo(); }; }
+let sel = hoyDia();
+const fotos = {}; // imágenes ya cargadas
+
+function cargarFoto(url) {
+  if (!url) return Promise.resolve(null);
+  if (fotos[url]) return fotos[url];
+  return fotos[url] = new Promise((ok) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = ligera(url); });
+}
+function revolver() {
+  const n = est.productos.length; if (!n) return;
+  const inicio = Math.floor(Math.random() * n);
+  ORDEN.forEach((d, i) => { est.semana[d] = { p: (inicio + i) % n, frase: FRASES[d] }; });
+  guardarEst();
+}
+
+async function cargar() {
+  const slug = $("slug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (!slug) { $("msg").textContent = "Escribe el nombre del negocio como aparece en su enlace."; return; }
+  $("msg").className = "msg"; $("msg").textContent = "Cargando…";
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 20000);
+    const r = await fetch(FN + "?accion=negocio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }), signal: ctl.signal });
+    const d = await r.json(); if (!r.ok || !d.negocio) throw new Error(d.error || "No encontré ese negocio");
+    est.slug = slug; est.nombre = d.negocio.nombre; est.wa = String(d.negocio.whatsapp || "").replace(/^52/, ""); $("wa").value = est.wa;
+    est.productos = (d.publicaciones || []).map((p) => ({ titulo: p.titulo, precio: p.precio, antes: p.precio_antes, foto: p.imagen_url || "" }));
+    revolver(); $("msg").textContent = `✅ ${est.productos.length} productos de ${est.nombre}. Ya repartí uno por día; cámbialos si quieres.`;
+    pintarTodo();
+  } catch (e) { $("msg").className = "msg mal"; $("msg").textContent = "⚠️ " + (e.name === "AbortError" ? "La señal está lenta, intenta de nuevo." : e.message); }
+}
+$("cargar").onclick = cargar;
+$("otraSemana").onclick = () => { revolver(); pintarTodo(); };
+
+// ---------- Dibujo de un estado (1080 x 1920) ----------
+function lineas(ctx, texto, ancho, max) {
+  const out = []; let l = "";
+  for (const p of String(texto).split(/\s+/)) { const t = l ? l + " " + p : p; if (ctx.measureText(t).width > ancho && l) { out.push(l); l = p; } else l = t; }
+  if (l) out.push(l); return out.slice(0, max);
+}
+function redondo(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+async function dibujar(cv, d) {
+  const ctx = cv.getContext("2d"), W = 1080, H = 1920; cv.width = W; cv.height = H;
+  const dia = est.semana[d], p = est.productos[dia?.p]; if (!p) return;
+  const color = est.color || "#3b1466";
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, color); g.addColorStop(1, "#12051f");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // Día
+  ctx.fillStyle = "#f2c14e"; redondo(ctx, 80, 110, 380, 96, 48); ctx.fill();
+  ctx.fillStyle = "#2a0f47"; ctx.font = "900 54px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(DIAS[d].toUpperCase(), 270, 160);
+  // Frase
+  ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.font = "800 84px system-ui, sans-serif";
+  lineas(ctx, dia.frase || FRASES[d], W - 160, 2).forEach((l, i) => ctx.fillText(l, 80, 260 + i * 98));
+  // Foto
+  const img = await cargarFoto(p.foto), fy = 500, fh = 860, fx = 80, fw = W - 160;
+  ctx.save(); redondo(ctx, fx, fy, fw, fh, 44); ctx.clip();
+  ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fillRect(fx, fy, fw, fh);
+  if (img) { const k = Math.min(fw / img.naturalWidth, fh / img.naturalHeight); const w = img.naturalWidth * k, hh = img.naturalHeight * k; ctx.drawImage(img, fx + (fw - w) / 2, fy + (fh - hh) / 2, w, hh); }
+  else { ctx.font = "260px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🛍️", W / 2, fy + fh / 2); }
+  ctx.restore();
+  // Título y precio
+  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = "#fff"; ctx.font = "800 58px system-ui, sans-serif";
+  const ls = lineas(ctx, p.titulo, W - 160, 2); ls.forEach((l, i) => ctx.fillText(l, 80, 1410 + i * 68));
+  let y = 1410 + ls.length * 68 + 18;
+  if (p.precio != null && p.precio !== "") {
+    ctx.fillStyle = "#f2c14e"; ctx.font = "900 120px system-ui, sans-serif"; ctx.fillText(pesos(p.precio), 80, y);
+    if (p.antes) { const w = ctx.measureText(pesos(p.precio)).width; ctx.font = "600 54px system-ui, sans-serif"; ctx.fillStyle = "#c9b6e8"; const ta = pesos(p.antes); ctx.fillText(ta, 110 + w, y + 54); ctx.fillRect(110 + w, y + 82, ctx.measureText(ta).width, 5); }
+  }
+  // Pie
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(0, H - 170, W, 170);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "700 50px system-ui, sans-serif";
+  ctx.fillText("💬 Responde a este estado para pedir", W / 2, H - 112);
+  ctx.fillStyle = "#f2c14e"; ctx.font = "700 40px system-ui, sans-serif";
+  const t = String(est.wa || "").replace(/\D/g, "").slice(-10);
+  ctx.fillText((est.nombre || "") + (t.length === 10 ? ` · ${t.slice(0, 3)} ${t.slice(3, 6)} ${t.slice(6)}` : ""), W / 2, H - 52);
+}
+
+// ---------- Pantalla ----------
+async function pintarTodo() {
+  if (!est.productos.length) return;
+  if (!Object.keys(est.semana).length) revolver();
+  $("editor").hidden = false; $("vista").hidden = false;
+  $("producto").innerHTML = est.productos.map((p, i) => `<option value="${i}">${p.titulo.replace(/</g, "&lt;")} ${pesos(p.precio)}</option>`).join("");
+  $("dias").innerHTML = ORDEN.map((d) => `<button class="dia ${d === sel ? "sel" : ""}" data-d="${d}">${d === hoyDia() ? '<b class="hoy">HOY</b>' : ""}<canvas width="1080" height="1920"></canvas><span>${DIAS[d]}</span></button>`).join("");
+  elegir(sel);
+  for (const b of $("dias").querySelectorAll(".dia")) dibujar(b.querySelector("canvas"), Number(b.dataset.d));
+}
+async function elegir(d) {
+  sel = d;
+  $("dias").querySelectorAll(".dia").forEach((b) => b.classList.toggle("sel", Number(b.dataset.d) === d));
+  $("producto").value = est.semana[d]?.p ?? 0; $("frase").value = est.semana[d]?.frase || FRASES[d];
+  await dibujar($("grande"), d);
+}
+$("dias").onclick = (e) => { const b = e.target.closest(".dia"); if (b) elegir(Number(b.dataset.d)); };
+async function cambioDia() {
+  est.semana[sel] = { p: Number($("producto").value), frase: $("frase").value.trim() || FRASES[sel] }; guardarEst();
+  await dibujar($("grande"), sel);
+  const b = $("dias").querySelector(`[data-d="${sel}"] canvas`); if (b) dibujar(b, sel);
+}
+$("producto").onchange = cambioDia;
+let tf; $("frase").oninput = () => { clearTimeout(tf); tf = setTimeout(cambioDia, 400); };
+
+const archivo = (cv, d) => new Promise((ok) => cv.toBlob((b) => ok(new File([b], `estado-${DIAS[d].toLowerCase()}.jpg`, { type: "image/jpeg" })), "image/jpeg", 0.9));
+function bajar(f) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }
+$("publicar").onclick = async () => {
+  const f = await archivo($("grande"), sel);
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); } catch (e) { if (e.name !== "AbortError") avisar("No se pudo compartir; usa Guardar"); } }
+  else { bajar(f); avisar("La guardé; súbela a tu estado desde la galería"); }
+};
+$("guardar").onclick = async () => { bajar(await archivo($("grande"), sel)); avisar("Imagen guardada ✅"); };
+$("todas").onclick = async () => {
+  for (const d of ORDEN) { const cv = document.createElement("canvas"); await dibujar(cv, d); bajar(await archivo(cv, d)); await new Promise((r) => setTimeout(r, 400)); }
+  avisar("Las 7 imágenes se guardaron ✅");
+};
+
+if (est.productos.length) pintarTodo(); else if (est.slug) cargar();
+</script>
+</body>
+</html>
