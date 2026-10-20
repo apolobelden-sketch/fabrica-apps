@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Costeo Guizar · cuánto cuesta cada platillo y a cuánto venderlo</title>
+<meta name="description" content="Calcula el costo real de cada platillo con merma, a cuánto venderlo y qué pasa cuando sube un insumo.">
+<meta name="theme-color" content="#22302a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root{--pizarron:#22302a;--pizarron2:#2f4038;--gis:#f2f5f3;--aguacate:#4d7c0f;--chile:#d97706;--tomate:#c2410c;--tinta:#1d2420;--gris:#5f6b65;--linea:#dbe3de;--fondo:#f3f6f4;--rotulo:"Bricolage Grotesque",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--tinta);min-height:100vh;padding-bottom:84px}
+  button,input,select{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--chile);outline-offset:2px}
+  .num{font-variant-numeric:tabular-nums}
+  header{background:var(--pizarron);color:var(--gis);padding:16px 16px 14px;position:sticky;top:0;z-index:20}
+  header h1{font-family:var(--rotulo);font-weight:800;font-size:1.3rem;line-height:1.1}
+  header p{font-size:.82rem;color:#b9c7bf;margin-top:2px}
+  .sem{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .sem span{font-size:.78rem;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--pizarron2)}
+  .sem i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+  main{padding:14px 16px;max-width:720px;margin:0 auto}
+  h2{font-family:var(--rotulo);font-weight:800;font-size:1.2rem;margin:4px 0 10px}
+  .ayuda{color:var(--gris);font-size:.88rem;line-height:1.45}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:2px solid var(--linea);background:#fff;border-radius:10px;padding:11px 14px;font-weight:700;cursor:pointer}
+  .btn.prim{background:var(--pizarron);border-color:var(--pizarron);color:#fff}
+  .btn.ancho{width:100%}
+  .btn.peligro{color:var(--tomate);border-color:#f5c9b5}
+  .fila{display:flex;gap:8px;align-items:flex-end}.fila>*{flex:1;min-width:0}
+  .campo{display:block;margin-bottom:10px}
+  .campo span{display:block;font-size:.8rem;color:var(--gris);margin-bottom:4px}
+  input,select{width:100%;background:#fff;border:2px solid var(--linea);border-radius:10px;padding:10px 11px;font-size:1rem}
+  input:focus,select:focus{outline:none;border-color:var(--pizarron2)}
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--linea);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  nav.tabs button{flex:1;border:0;background:none;padding:10px 0 12px;font-size:.75rem;font-weight:600;color:var(--gris);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+  nav.tabs button b{font-size:1.3rem}
+  nav.tabs button[aria-current="page"]{color:var(--pizarron)}
+  /* Platillo: precio como en el pizarrón del local */
+  .plat{display:flex;gap:12px;align-items:stretch;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:12px;margin-bottom:10px;width:100%;text-align:left;cursor:pointer}
+  .plat .luz{width:6px;border-radius:6px;flex:none}
+  .plat .info{flex:1;min-width:0}
+  .plat .info>span{display:block}
+  .plat .info b{display:block;font-size:1rem}
+  .plat .info small{display:block;color:var(--gris);font-size:.8rem;margin-top:2px}
+  .plat .info .msg{font-size:.82rem;font-weight:700;margin-top:6px}
+  .pizarra{background:var(--pizarron);color:#fff;border-radius:10px;padding:8px 10px;text-align:center;min-width:86px;align-self:center}
+  .pizarra small{display:block;font-size:.66rem;color:#b9c7bf}
+  .pizarra b{font-family:var(--rotulo);font-weight:800;font-size:1.35rem}
+  .bien{--c:var(--aguacate)} .cuidado{--c:var(--chile)} .mal{--c:var(--tomate)} .sin_precio{--c:#9aa5a0}
+  .luz{background:var(--c)} .msg{color:var(--c)}
+  .barra{display:block;height:8px;border-radius:99px;background:var(--linea);overflow:hidden;margin-top:6px;position:relative}
+  .barra i{display:block;height:100%;background:var(--c)}
+  .barra em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--tinta)}
+  .ing{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:11px 12px;margin-bottom:8px;width:100%;text-align:left;cursor:pointer}
+  .ing .t{flex:1;min-width:0} .ing .t b{display:block} .ing .t small{color:var(--gris);font-size:.8rem}
+  .ing .p{text-align:right;font-weight:800;font-family:var(--rotulo)}
+  .ing .p small{display:block;font-family:system-ui;font-weight:500;font-size:.72rem;color:var(--gris)}
+  .sube{color:var(--tomate);font-size:.75rem;font-weight:700} .baja{color:var(--aguacate);font-size:.75rem;font-weight:700}
+  dialog{border:0;border-radius:16px 16px 0 0;padding:0;width:100%;max-width:720px;margin:auto auto 0;max-height:94vh;background:var(--fondo);color:var(--tinta)}
+  dialog::backdrop{background:rgba(20,30,25,.55)}
+  .dcab{display:flex;align-items:center;padding:14px 16px;background:#fff;border-bottom:1px solid var(--linea);position:sticky;top:0;z-index:2}
+  .dcab h3{flex:1;font-family:var(--rotulo);font-weight:800;font-size:1.1rem}
+  .dcab button{border:0;background:none;font-size:1.5rem;cursor:pointer;color:var(--gris)}
+  .dcuerpo{padding:14px 16px 22px}
+  @media (min-width:740px){dialog{border-radius:16px;margin:auto}}
+  .partida{display:grid;grid-template-columns:1fr 70px 66px 26px;gap:6px;margin-bottom:6px;align-items:center}
+  .partida input,.partida select{padding:8px;font-size:.9rem}
+  .partida .x{border:0;background:none;color:var(--gris);font-size:1.1rem;cursor:pointer}
+  .partida .c{grid-column:1/-1;font-size:.75rem;color:var(--gris);margin:-2px 0 4px 2px}
+  .resultado{background:var(--pizarron);color:#fff;border-radius:14px;padding:14px;margin:12px 0}
+  .resultado .r{display:flex;justify-content:space-between;padding:3px 0;font-size:.92rem}
+  .resultado .r b{font-family:var(--rotulo)}
+  .resultado .grande{font-family:var(--rotulo);font-weight:800;font-size:1.6rem}
+  .impacto{background:#fff;border:2px solid #f5c9b5;border-radius:12px;padding:12px;margin:10px 0}
+  .impacto .r{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--linea);font-size:.9rem}
+  .impacto .r:last-child{border-bottom:0}
+  .aviso{position:fixed;left:16px;right:16px;top:90px;background:var(--tinta);color:#fff;font-weight:600;padding:12px;border-radius:12px;text-align:center;z-index:60;opacity:0;transform:translateY(-10px);transition:.2s;pointer-events:none}
+  .aviso.ver{opacity:1;transform:none}
+  .alerta{background:#fff4e5;border:1px solid #f7cf9a;color:#6b3d00;border-radius:10px;padding:10px 12px;font-size:.88rem;margin-bottom:12px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="titulo">Costeo Guizar</h1>
+  <p id="sub">Cuánto te cuesta cada platillo y a cuánto venderlo</p>
+  <div class="sem" id="semaforo"></div>
+</header>
+<main id="vista"></main>
+<nav class="tabs" id="tabs" hidden>
+  <button data-tab="platillos" aria-current="page"><b aria-hidden="true">🌮</b>Platillos</button>
+  <button data-tab="ingredientes"><b aria-hidden="true">🧅</b>Ingredientes</button>
+  <button data-tab="ajustes"><b aria-hidden="true">⚙️</b>Ajustes</button>
+</nav>
+<dialog id="modal"><div class="dcab"><h3 id="mTit"></h3><button id="mX" aria-label="Cerrar">×</button></div><div class="dcuerpo" id="mCuerpo"></div></dialog>
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+"use strict";
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/costeo";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const peso = (n) => n == null ? "—" : "$" + Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pesoCorto = (n) => n == null ? "—" : "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+const UNIDADES = { kg: "kg", g: "g", L: "litro", ml: "ml", pieza: "pieza", docena: "docena", paquete: "paquete" };
+const FAM = { kg: "g", g: "g", L: "ml", ml: "ml", pieza: "pz", docena: "pz", paquete: "pz" };
+const UNID_PARTIDA = { g: ["g", "kg"], ml: ["ml", "L"], pz: ["pz", "docena"] };
+const TEXTO_ESTADO = { bien: "Buen precio", cuidado: "Ganancia justa", mal: "Deja poca ganancia", sin_precio: "Sin precio de venta" };
+function avisar(t, ms = 2600) { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("ver"), ms); }
+const abrir = (t, html, fn) => { $("mTit").textContent = t; $("mCuerpo").innerHTML = html; if (!$("modal").open) $("modal").showModal(); fn && fn(); };
+const cerrar = () => $("modal").open && $("modal").close();
+$("mX").onclick = cerrar; $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) cerrar(); });
+
+// ---------- Acceso: enlace privado de la cocina (#c=...&k=...) o código del dueño ----------
+const h = new URLSearchParams(location.hash.slice(1));
+let cocina = (h.get("c") || localStorage.getItem("costeo_c") || "").replace(/[^a-z0-9-]/g, "");
+let clave = h.get("k") || (cocina && localStorage.getItem("costeo_k_" + cocina)) || "";
+const dueno = () => localStorage.getItem("costeo_dueno") || "";
+if (cocina) { localStorage.setItem("costeo_c", cocina); if (h.get("k")) localStorage.setItem("costeo_k_" + cocina, h.get("k")); }
+if (h.get("k")) history.replaceState(null, "", location.pathname + "#c=" + cocina); // la clave no se queda a la vista
+const cabeceras = () => ({ "Content-Type": "application/json", ...(clave ? { "x-cocina-clave": clave } : {}), ...(dueno() ? { "x-fabrica-clave": dueno() } : {}) });
+async function api(accion, cuerpo) {
+  const ctl = new AbortController(); setTimeout(() => ctl.abort(), 20000);
+  const r = await fetch(`${FN}?accion=${accion}&c=${encodeURIComponent(cocina)}`, cuerpo ? { method: "POST", headers: cabeceras(), body: JSON.stringify({ c: cocina, ...cuerpo }), signal: ctl.signal } : { headers: cabeceras(), signal: ctl.signal });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(d.error || "No se pudo conectar"), { candado: d.candado });
+  return d;
+}
+
+let D = null, tab = "platillos", sinRed = false;
+async function cargar() {
+  try {
+    D = await api("datos"); sinRed = false;
+    try { localStorage.setItem("costeo_cache_" + cocina, JSON.stringify(D)); } catch (e) {}
+  } catch (e) {
+    if (e.candado) { pantallaAcceso("Este enlace no es válido o la clave cambió. Pide tu enlace de nuevo."); return false; }
+    const c = localStorage.getItem("costeo_cache_" + cocina);
+    if (c) { D = JSON.parse(c); sinRed = true; avisar("Sin internet: te muestro lo último guardado", 3500); }
+    else { $("vista").innerHTML = `<div class="alerta">No hay conexión y todavía no hay datos guardados en este teléfono. Intenta con señal.</div>`; return false; }
+  }
+  return true;
+}
+function pantallaAcceso(msg) {
+  $("tabs").hidden = true; $("semaforo").innerHTML = "";
+  $("vista").innerHTML = `<h2>Entra a tu costeo</h2><p class="ayuda" style="margin-bottom:12px">${esc(msg || "Abre el enlace privado que te mandaron por WhatsApp.")}</p>
+    <label class="campo"><span>Si eres el dueño de la Fábrica, escribe tu código</span><input id="cod" type="password" autocomplete="off"></label>
+    <label class="campo"><span>Cocina</span><input id="coc" value="${esc(cocina)}" placeholder="ej. tacos-el-guero-ejemplo" autocapitalize="off"></label>
+    <button class="btn prim ancho" id="entrar">Entrar</button>`;
+  $("entrar").onclick = async () => {
+    localStorage.setItem("costeo_dueno", $("cod").value.trim()); cocina = $("coc").value.trim().toLowerCase(); localStorage.setItem("costeo_c", cocina);
+    if (await cargar()) iniciar();
+  };
+}
+
+// ---------- Pantalla ----------
+function pintarCabecera() {
+  $("titulo").textContent = D.cocina.nombre;
+  $("sub").textContent = `Meta: que los ingredientes sean máximo el ${D.cocina.meta}% del precio${sinRed ? " · sin internet" : ""}`;
+  const n = (e) => D.platillos.filter((p) => p.estado === e).length;
+  $("semaforo").innerHTML = `<span><i style="background:var(--aguacate)"></i>${n("bien")} bien</span><span><i style="background:var(--chile)"></i>${n("cuidado")} justos</span><span><i style="background:var(--tomate)"></i>${n("mal")} poca ganancia</span>`;
+}
+function pintar() {
+  pintarCabecera();
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"));
+  ({ platillos: pintarPlatillos, ingredientes: pintarIngredientes, ajustes: pintarAjustes })[tab]();
+}
+document.querySelectorAll("nav.tabs button").forEach((b) => b.onclick = () => { tab = b.dataset.tab; pintar(); scrollTo(0, 0); });
+
+function pintarPlatillos() {
+  const orden = { mal: 0, cuidado: 1, sin_precio: 2, bien: 3 };
+  const l = [...D.platillos].sort((a, b) => orden[a.estado] - orden[b.estado] || a.nombre.localeCompare(b.nombre));
+  $("vista").innerHTML = `<div class="fila" style="margin-bottom:12px"><h2 style="margin:0">Platillos</h2><button class="btn prim" id="nuevoP" style="flex:none">➕ Platillo</button></div>
+    ${!D.ingredientes.length ? `<div class="alerta">Empieza en 🧅 Ingredientes: agrega lo que compras con su precio. Luego arma tus platillos.</div>` : ""}
+    ${l.map((p) => { const pct = p.porcentaje_costo == null ? 0 : Math.min(100, p.porcentaje_costo); return `<button class="plat ${p.estado}" data-p="${p.id}">
+      <span class="luz"></span>
+      <span class="info"><b>${esc(p.nombre)}</b><small class="num">Te cuesta ${peso(p.costo)}${p.ganancia != null ? ` · ganas ${peso(p.ganancia)}` : ""}</small>
+        ${p.precio != null ? `<span class="barra" aria-hidden="true"><i style="width:${pct}%"></i><em style="left:${D.cocina.meta}%"></em></span>` : ""}
+        <span class="msg">${TEXTO_ESTADO[p.estado]}${p.porcentaje_costo != null ? ` · ingredientes ${p.porcentaje_costo}%` : ""}${p.estado === "mal" || p.estado === "cuidado" ? ` · sugerido ${pesoCorto(p.sugerido)}` : ""}</span>
+        ${p.errores.length ? `<small style="color:var(--tomate)">⚠️ ${esc(p.errores[0])}</small>` : ""}</span>
+      <span class="pizarra"><small>Lo vendes a</small><b class="num">${pesoCorto(p.precio)}</b></span></button>`; }).join("") || `<p class="ayuda">Todavía no hay platillos.</p>`}`;
+  $("nuevoP").onclick = () => editarPlatillo();
+  document.querySelectorAll("[data-p]").forEach((b) => b.onclick = () => editarPlatillo(D.platillos.find((p) => p.id === Number(b.dataset.p))));
+}
+
+// ---------- Editor de receta con cálculo al momento ----------
+function costoBase(i) { const f = i.unidad === "paquete" ? Number(i.piezas_paquete || 1) : { kg: 1000, g: 1, L: 1000, ml: 1, pieza: 1, docena: 12 }[i.unidad]; return i.precio / (i.cantidad * f) / (1 - (i.merma || 0) / 100); }
+const FU = { kg: 1000, g: 1, L: 1000, ml: 1, pz: 1, docena: 12 };
+function redondeo(x) { if (x <= 0) return 0; if (x < 10) return Math.ceil(x * 2) / 2; if (x < 50) return Math.ceil(x); if (x < 200) return Math.ceil(x / 5) * 5; return Math.ceil(x / 10) * 10; }
+function editarPlatillo(p) {
+  if (!D.ingredientes.length) { avisar("Primero agrega ingredientes"); tab = "ingredientes"; pintar(); return; }
+  let partidas = p ? p.partidas.map((x) => ({ ...x })) : [{ ing: D.ingredientes[0].id, cant: "", u: UNID_PARTIDA[FAM[D.ingredientes[0].unidad]][0] }];
+  const opciones = (sel) => D.ingredientes.map((i) => `<option value="${i.id}" ${i.id === Number(sel) ? "selected" : ""}>${esc(i.nombre)}</option>`).join("");
+  abrir(p ? p.nombre : "Platillo nuevo", `
+    <label class="campo"><span>Nombre del platillo</span><input id="pNom" value="${esc(p?.nombre || "")}" placeholder="Ej. Taco de bistec"></label>
+    <div class="fila"><label class="campo"><span>Lo vendes a</span><input id="pPre" inputmode="decimal" value="${p?.precio ?? ""}" placeholder="$"></label>
+    <label class="campo"><span>Categoría</span><input id="pCat" value="${esc(p?.categoria || "")}" placeholder="Tacos"></label></div>
+    <h2 style="font-size:1rem;margin-top:6px">¿Qué lleva?</h2>
+    <p class="ayuda" style="margin-bottom:8px">La cantidad de cada ingrediente para la receta.</p>
+    <div id="partidas"></div>
+    <button class="btn ancho" id="masIng">➕ Otro ingrediente</button>
+    <div class="fila" style="margin-top:10px"><label class="campo"><span>La receta rinde (porciones)</span><input id="pRen" inputmode="decimal" value="${p?.rendimiento ?? 1}"></label>
+    <label class="campo"><span>Extras por porción (gas, empaque)</span><input id="pExt" inputmode="decimal" value="${p?.extras ?? 0}"></label></div>
+    <div class="resultado" id="res"></div>
+    <button class="btn prim ancho" id="pOk">Guardar platillo</button>
+    ${p ? `<button class="btn peligro ancho" id="pBorrar" style="margin-top:8px">Borrar platillo</button>` : ""}`, () => {
+    const pintarPartidas = () => {
+      $("partidas").innerHTML = partidas.map((x, k) => { const i = D.ingredientes.find((y) => y.id === Number(x.ing)); const us = UNID_PARTIDA[FAM[i?.unidad || "g"]]; if (!us.includes(x.u)) x.u = us[0];
+        const c = i && Number(x.cant) > 0 ? costoBase(i) * Number(x.cant) * FU[x.u] : 0;
+        return `<div class="partida" data-k="${k}"><select data-f="ing" aria-label="Ingrediente">${opciones(x.ing)}</select><input data-f="cant" inputmode="decimal" value="${x.cant}" placeholder="Cant." aria-label="Cantidad"><select data-f="u" aria-label="Unidad">${us.map((u) => `<option ${u === x.u ? "selected" : ""}>${u}</option>`).join("")}</select><button class="x" data-quitar="${k}" aria-label="Quitar">✕</button><span class="c num">${c ? "cuesta " + peso(c) : ""}</span></div>`; }).join("");
+      calc();
+    };
+    const calc = () => {
+      let total = 0; for (const x of partidas) { const i = D.ingredientes.find((y) => y.id === Number(x.ing)); if (i && Number(x.cant) > 0) total += costoBase(i) * Number(x.cant) * FU[x.u]; }
+      const costo = total / (Number($("pRen").value) || 1) + (Number($("pExt").value) || 0);
+      const precio = $("pPre").value === "" ? null : Number($("pPre").value);
+      const pct = precio ? costo / precio * 100 : null, meta = D.cocina.meta, sug = redondeo(costo / (meta / 100));
+      const est = precio == null ? "sin_precio" : pct <= meta ? "bien" : pct <= meta + 8 ? "cuidado" : "mal";
+      $("res").innerHTML = `<div class="r"><span>Te cuesta cada porción</span><b class="num">${peso(costo)}</b></div>
+        ${precio != null ? `<div class="r"><span>Ganas por porción</span><b class="num">${peso(precio - costo)}</b></div><div class="r"><span>Ingredientes</span><b class="num">${pct.toFixed(1)}% del precio</b></div>` : ""}
+        <div class="r" style="margin-top:6px"><span>Precio sugerido (meta ${meta}%)</span><span class="grande num">${pesoCorto(sug)}</span></div>
+        <div class="r"><span class="${est}" style="font-weight:700;color:${est === "bien" ? "#a3e635" : est === "cuidado" ? "#fbbf24" : est === "mal" ? "#fb923c" : "#cbd5d0"}">${TEXTO_ESTADO[est]}</span>${precio !== sug ? `<button class="btn" id="usarSug" style="padding:4px 10px;font-size:.82rem">Usar ${pesoCorto(sug)}</button>` : ""}</div>`;
+      if ($("usarSug")) $("usarSug").onclick = () => { $("pPre").value = sug; calc(); };
+    };
+    $("partidas").addEventListener("change", (e) => { const k = e.target.closest(".partida")?.dataset.k; if (k == null || e.target.dataset.f === "cant") return; partidas[k][e.target.dataset.f] = e.target.value; pintarPartidas(); });
+    $("partidas").addEventListener("input", (e) => { const k = e.target.closest(".partida")?.dataset.k; if (k == null || e.target.dataset.f !== "cant") return; partidas[k].cant = e.target.value.replace(",", "."); calc(); const c = e.target.closest(".partida").querySelector(".c"); const i = D.ingredientes.find((y) => y.id === Number(partidas[k].ing)); const v = Number(partidas[k].cant) > 0 ? costoBase(i) * Number(partidas[k].cant) * FU[partidas[k].u] : 0; c.textContent = v ? "cuesta " + peso(v) : ""; });
+    $("partidas").addEventListener("click", (e) => { const q = e.target.dataset.quitar; if (q != null) { partidas.splice(Number(q), 1); pintarPartidas(); } });
+    $("masIng").onclick = () => { const i = D.ingredientes[0]; partidas.push({ ing: i.id, cant: "", u: UNID_PARTIDA[FAM[i.unidad]][0] }); pintarPartidas(); };
+    ["pPre", "pRen", "pExt"].forEach((id) => $(id).oninput = calc);
+    pintarPartidas();
+    $("pOk").onclick = async () => {
+      const nombre = $("pNom").value.trim(); if (!nombre) { avisar("Escribe el nombre del platillo"); return; }
+      $("pOk").disabled = true;
+      try {
+        await api("guardar_platillo", { id: p?.id, nombre, categoria: $("pCat").value.trim(), precio_venta: $("pPre").value === "" ? null : $("pPre").value, rendimiento: $("pRen").value, extras: $("pExt").value, partidas: partidas.filter((x) => Number(x.cant) > 0) });
+        cerrar(); avisar("Platillo guardado"); await cargar(); pintar();
+      } catch (e) { $("pOk").disabled = false; avisar("⚠️ " + e.message, 3500); }
+    };
+    if (p) $("pBorrar").onclick = async () => { if (!confirm(`¿Borrar ${p.nombre}?`)) return; try { await api("borrar_platillo", { id: p.id }); cerrar(); avisar("Platillo borrado"); await cargar(); pintar(); } catch (e) { avisar("⚠️ " + e.message); } };
+  });
+}
+
+// ---------- Ingredientes ----------
+function pintarIngredientes() {
+  $("vista").innerHTML = `<div class="fila" style="margin-bottom:6px"><h2 style="margin:0">Ingredientes</h2><button class="btn prim" id="nuevoI" style="flex:none">➕ Ingrediente</button></div>
+    <p class="ayuda" style="margin-bottom:12px">¿Subió algo? Tócalo, pon el precio nuevo y te digo qué platillos afecta antes de guardar.</p>
+    ${D.ingredientes.map((i) => { const h = i.historial || []; const ant = h[1]?.precio; const dif = ant ? Math.round((i.precio - ant) / ant * 100) : 0;
+      return `<button class="ing" data-i="${i.id}"><span class="t"><b>${esc(i.nombre)}</b><small>${i.merma ? `merma ${i.merma}% · ` : ""}${i.usado_en.length ? "en " + i.usado_en.length + (i.usado_en.length === 1 ? " platillo" : " platillos") : "sin usar"}</small>${dif ? `<span class="${dif > 0 ? "sube" : "baja"}"> ${dif > 0 ? "▲ subió" : "▼ bajó"} ${Math.abs(dif)}%</span>` : ""}</span>
+        <span class="p num">${pesoCorto(i.precio)}<small>${i.cantidad !== 1 ? i.cantidad + " " : "por "}${UNIDADES[i.unidad]}${i.unidad === "paquete" ? ` de ${i.piezas_paquete}` : ""}</small></span></button>`; }).join("") || `<p class="ayuda">Agrega lo que compras: carne, tortilla, verdura, desechables…</p>`}`;
+  $("nuevoI").onclick = () => editarIngrediente();
+  document.querySelectorAll("[data-i]").forEach((b) => b.onclick = () => editarIngrediente(D.ingredientes.find((i) => i.id === Number(b.dataset.i))));
+}
+function editarIngrediente(i) {
+  abrir(i ? i.nombre : "Ingrediente nuevo", `
+    <label class="campo"><span>Nombre</span><input id="iNom" value="${esc(i?.nombre || "")}" placeholder="Ej. Bistec de res"></label>
+    <div class="fila"><label class="campo"><span>Precio que pagas</span><input id="iPre" inputmode="decimal" value="${i?.precio ?? ""}" placeholder="$"></label>
+    <label class="campo"><span>Por</span><input id="iCan" inputmode="decimal" value="${i?.cantidad ?? 1}"></label>
+    <label class="campo"><span>&nbsp;</span><select id="iUni">${Object.entries(UNIDADES).map(([k, t]) => `<option value="${k}" ${i?.unidad === k ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
+    <label class="campo" id="cajaPaq" ${i?.unidad === "paquete" ? "" : "hidden"}><span>¿Cuántas piezas trae el paquete?</span><input id="iPaq" inputmode="decimal" value="${i?.piezas_paquete ?? ""}"></label>
+    <label class="campo"><span>Merma: lo que se pierde al limpiar o cocinar (%)</span><input id="iMer" inputmode="decimal" value="${i?.merma ?? 0}" placeholder="Ej. carne 20, cebolla 10"></label>
+    <div id="impacto"></div>
+    ${i?.historial?.length > 1 ? `<p class="ayuda" style="margin:6px 0 10px">Precios anteriores: ${i.historial.slice(1, 5).map((x) => `${pesoCorto(x.precio)} (${new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short" })})`).join(" · ")}</p>` : ""}
+    <button class="btn prim ancho" id="iOk">Guardar</button>
+    ${i ? `<button class="btn peligro ancho" id="iBorrar" style="margin-top:8px">Borrar ingrediente</button>` : ""}`, () => {
+    $("iUni").onchange = () => { $("cajaPaq").hidden = $("iUni").value !== "paquete"; };
+    // Impacto en vivo cuando cambia el precio de un ingrediente que ya se usa
+    let t; if (i) $("iPre").oninput = () => { clearTimeout(t); t = setTimeout(async () => {
+      const v = Number($("iPre").value); if (!(v >= 0) || v === i.precio || !i.usado_en.length) { $("impacto").innerHTML = ""; return; }
+      try {
+        const r = await api("simular&ingrediente=" + encodeURIComponent(i.nombre) + "&precio=" + v);
+        $("impacto").innerHTML = `<div class="impacto"><b>${r.cambio_porcentaje > 0 ? "Subiría" : "Bajaría"} ${Math.abs(r.cambio_porcentaje)}%. Así quedarían tus platillos:</b>${r.platillos_afectados.map((x) => `<div class="r ${x.estado}"><span>${esc(x.platillo)}<br><small class="num">costo ${peso(x.costo_antes)} → <b>${peso(x.costo_ahora)}</b></small></span><span class="msg num" style="text-align:right">${x.porcentaje_costo_ahora != null ? x.porcentaje_costo_ahora + "%" : ""}<br><small>sugerido ${pesoCorto(x.precio_sugerido)}</small></span></div>`).join("")}</div>`;
+      } catch (e) { $("impacto").innerHTML = ""; }
+    }, 500); };
+    $("iOk").onclick = async () => {
+      const nombre = $("iNom").value.trim(); if (!nombre) { avisar("Escribe el nombre"); return; }
+      if ($("iPre").value === "") { avisar("Escribe el precio"); return; }
+      $("iOk").disabled = true;
+      try {
+        await api("guardar_ingrediente", { id: i?.id, nombre, precio: $("iPre").value, cantidad: $("iCan").value, unidad: $("iUni").value, piezas_paquete: $("iPaq").value, merma: $("iMer").value });
+        cerrar(); avisar("Ingrediente guardado"); await cargar(); pintar();
+      } catch (e) { $("iOk").disabled = false; avisar("⚠️ " + e.message, 4000); }
+    };
+    if (i) $("iBorrar").onclick = async () => { if (!confirm(`¿Borrar ${i.nombre}?`)) return; try { await api("borrar_ingrediente", { id: i.id }); cerrar(); avisar("Borrado"); await cargar(); pintar(); } catch (e) { avisar("⚠️ " + e.message, 4000); } };
+  });
+}
+
+// ---------- Ajustes y compartir ----------
+function pintarAjustes() {
+  $("vista").innerHTML = `<h2>Ajustes</h2>
+    <label class="campo"><span>Nombre del negocio</span><input id="aNom" value="${esc(D.cocina.nombre)}"></label>
+    <label class="campo"><span>Meta: los ingredientes no deben pasar de este % del precio</span><input id="aMeta" inputmode="decimal" value="${D.cocina.meta}"></label>
+    <p class="ayuda" style="margin:-4px 0 12px">En taquerías y fondas se usa entre 30% y 35%. Si baja la meta, los precios sugeridos suben.</p>
+    <button class="btn prim ancho" id="aOk">Guardar</button>
+    <h2 style="margin-top:22px">Compartir</h2>
+    <button class="btn ancho" id="lista">📋 Mandar lista de precios sugeridos</button>
+    <p class="ayuda" style="margin-top:20px">Costeo Guizar · tus recetas y precios solo los ves tú con tu enlace privado.</p>`;
+  $("aOk").onclick = async () => { try { await api("ajustes", { nombre: $("aNom").value.trim(), meta: $("aMeta").value }); avisar("Guardado"); await cargar(); pintar(); } catch (e) { avisar("⚠️ " + e.message, 3500); } };
+  $("lista").onclick = async () => {
+    const t = `🌮 *${D.cocina.nombre}* · costos y precios\n\n` + D.platillos.map((p) => `${p.estado === "bien" ? "🟢" : p.estado === "cuidado" ? "🟡" : p.estado === "mal" ? "🔴" : "⚪"} ${p.nombre}: cuesta ${peso(p.costo)} · vendes a ${pesoCorto(p.precio)} · sugerido ${pesoCorto(p.sugerido)}`).join("\n") + `\n\nMeta: ingredientes máximo ${D.cocina.meta}% del precio.`;
+    if (navigator.share) { try { await navigator.share({ text: t }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(t); avisar("Lista copiada"); } catch (e) { avisar("No se pudo copiar"); }
+  };
+}
+
+function iniciar() { $("tabs").hidden = false; pintar(); }
+(async () => {
+  if (!cocina || (!clave && !dueno())) { pantallaAcceso(); return; }
+  $("vista").innerHTML = `<p class="ayuda">Cargando…</p>`;
+  if (await cargar()) iniciar();
+})();
+</script>
+</body>
+</html>
