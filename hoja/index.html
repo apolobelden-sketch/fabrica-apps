@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoja QR · Ediciones Guizar</title>
+<meta name="theme-color" content="#3b1466">
+<meta name="description" content="Arma una hoja para imprimir con tus productos, precios y un QR por producto que abre WhatsApp con el pedido ya escrito.">
+<style>
+  :root{--fondo:#1e0b36;--tarjeta:#2b1250;--borde:#4a2580;--oro:#f2c14e;--texto:#f7f1ff;--suave:#c9b6e8}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--texto);padding:16px 16px 60px}
+  .cab h1{font-size:1.3rem;color:var(--oro)} .cab p{color:var(--suave);font-size:.88rem;margin:4px 0 14px;line-height:1.4}
+  .caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:14px;padding:14px;margin-bottom:14px}
+  .caja h2{font-size:.95rem;color:var(--oro);margin-bottom:10px}
+  label{display:block;font-size:.8rem;color:var(--suave);margin:8px 0 4px}
+  input,select{width:100%;background:#1a0930;border:1.5px solid var(--borde);color:var(--texto);border-radius:10px;padding:10px;font-size:1rem;font-family:inherit}
+  .fila{display:flex;gap:8px;align-items:flex-end}.fila>*{flex:1}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:12px 14px;font-weight:700;font-size:.95rem;cursor:pointer;font-family:inherit;width:100%}
+  .oro{background:var(--oro);color:#2a0f47}.linea{background:transparent;color:var(--texto);border:1.5px solid var(--borde)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--borde);background:#1a0930;color:var(--texto);border-radius:999px;padding:9px 13px;font-size:.88rem;cursor:pointer;font-family:inherit}
+  .chip.si{background:var(--oro);border-color:var(--oro);color:#2a0f47;font-weight:700}
+  .prod{display:grid;grid-template-columns:26px 1fr 84px 30px;gap:6px;align-items:center;padding:8px 0;border-top:1px solid var(--borde)}
+  .prod:first-child{border-top:0}
+  .prod input[type=checkbox]{width:22px;height:22px;accent-color:var(--oro)}
+  .prod input{padding:8px;font-size:.9rem}
+  .x{background:none;border:0;color:var(--suave);font-size:1.2rem;cursor:pointer}
+  .msg{font-size:.85rem;color:var(--suave);margin-top:8px}.msg.mal{color:#ff9a9a}
+  #marco{background:#555;border-radius:12px;padding:8px;overflow:hidden}
+  #escala{transform-origin:top left}
+  .flotante{position:sticky;bottom:10px;z-index:5;margin-top:14px}
+
+  /* ---------- La hoja (tamaño carta real) ---------- */
+  .hoja{width:216mm;height:279mm;overflow:hidden;background:#fff;color:#1a1024;padding:10mm 11mm;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin-bottom:8px}
+  .h-cab{display:flex;align-items:center;gap:5mm;border-bottom:1.2mm solid var(--c,#3b1466);padding-bottom:3mm;margin-bottom:5mm}
+  .h-cab .tit{flex:1}
+  .h-cab h3{font-size:8.5mm;line-height:1.05;color:var(--c,#3b1466)}
+  .h-cab p{font-size:4mm;color:#555;margin-top:1.5mm}
+  .h-cab .qrp{text-align:center;font-size:2.8mm;color:#444;width:27mm}
+  .qr svg{display:block;width:100%;height:auto}
+  .rejilla{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+  .t{border:0.4mm solid #ddd;border-radius:4mm;padding:4mm;display:flex;gap:4mm;break-inside:avoid;page-break-inside:avoid}
+  .t .foto{width:34mm;height:34mm;border-radius:3mm;object-fit:cover;background:#f2eef8;flex:none}
+  .t .info{flex:1;display:flex;flex-direction:column;min-width:0}
+  .t h4{font-size:4.2mm;line-height:1.2;margin-bottom:1.5mm}
+  .t .pr{font-size:7mm;font-weight:900;color:var(--c,#3b1466)}
+  .t .pr s{font-size:3.6mm;color:#888;font-weight:600;margin-left:1.5mm}
+  .t .d{font-size:3.1mm;color:#555;line-height:1.3;margin-top:1mm;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .t .qrbox{display:flex;align-items:center;gap:2mm;margin-top:auto;padding-top:2mm}
+  .t .qrbox .qr{width:22mm;flex:none}
+  .t .qrbox span{font-size:2.9mm;color:#444;line-height:1.25}
+  .lista .t{border-radius:0;border:0;border-bottom:0.4mm dashed #ccc;padding:3mm 0}
+  .lista .rejilla{grid-template-columns:1fr;gap:0}
+  .lista .t .foto{display:none}
+  .lista .t .info{flex-direction:row;align-items:center;gap:4mm}
+  .lista .t .txt{flex:1}
+  .lista .t .qrbox{margin:0;padding:0}
+  .lista .t .qrbox .qr{width:18mm}
+  .pie{margin-top:4mm;text-align:center;font-size:3.4mm;color:#666}
+  .cartel{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .cartel .grande{font-size:15mm;font-weight:900;line-height:1;color:var(--c,#3b1466);margin:6mm 0 3mm}
+  .cartel .sub{font-size:6mm;color:#444;margin-bottom:8mm}
+  .cartel .qr{width:110mm;border:2mm solid var(--c,#3b1466);border-radius:6mm;padding:5mm}
+  .cartel .tel{font-size:9mm;font-weight:800;margin-top:7mm}
+  .cartel ul{list-style:none;padding:0;margin-top:8mm;font-size:6mm;line-height:1.6}
+  .cartel ul b{color:var(--c,#3b1466)}
+
+  @media print{
+    @page{size:letter;margin:0}
+    body{background:#fff;padding:0}
+    .no-imp{display:none!important}
+    #marco{background:none;padding:0;border-radius:0}
+    #escala{transform:none!important;height:auto!important}
+    .hoja{margin:0;box-shadow:none;height:278mm}
+    .hoja + .hoja{break-before:page;page-break-before:always}
+  }
+</style>
+</head>
+<body>
+<div class="no-imp">
+  <header class="cab">
+    <h1>🧾 Hoja QR para imprimir</h1>
+    <p>Tus productos con precio y un <b>QR en cada uno</b>: el cliente lo escanea y le llega a WhatsApp el pedido ya escrito.</p>
+  </header>
+
+  <section class="caja">
+    <h2>1. Productos</h2>
+    <div class="fila">
+      <div><label for="slug">Negocio de Plaza Emprende</label><input id="slug" placeholder="ediciones-guizar" autocapitalize="off"></div>
+      <div style="flex:none;width:110px"><button class="btn oro" id="cargar">Cargar</button></div>
+    </div>
+    <p class="msg" id="msgCarga">Trae los productos de tu perfil, o agrégalos a mano.</p>
+    <div id="lista" style="margin-top:10px"></div>
+    <button class="btn linea" id="agregar" style="margin-top:8px">➕ Agregar producto a mano</button>
+  </section>
+
+  <section class="caja">
+    <h2>2. Datos del negocio</h2>
+    <label for="nombre">Nombre</label><input id="nombre" placeholder="Ediciones Guizar">
+    <label for="lema">Frase (opcional)</label><input id="lema" placeholder="Pide fácil: escanea el QR del producto">
+    <div class="fila">
+      <div><label for="wa">WhatsApp (10 dígitos)</label><input id="wa" inputmode="numeric" placeholder="6311949491"></div>
+      <div><label for="color">Color</label><input id="color" type="color" value="#3b1466" style="height:46px;padding:4px"></div>
+    </div>
+    <label for="general">QR principal lleva a</label>
+    <select id="general">
+      <option value="wa">WhatsApp del negocio</option>
+      <option value="perfil">Perfil en Plaza Emprende</option>
+    </select>
+  </section>
+
+  <section class="caja">
+    <h2>3. Diseño</h2>
+    <div class="chips" id="disenos">
+      <button class="chip si" data-d="fotos">📸 Con fotos</button>
+      <button class="chip" data-d="lista">📋 Lista de precios (ahorra tinta)</button>
+      <button class="chip" data-d="cartel">🪧 Cartel de mostrador</button>
+    </div>
+  </section>
+
+  <h2 style="font-size:.95rem;color:var(--oro);margin:4px 0 8px">Vista previa</h2>
+</div>
+
+<div id="marco"><div id="escala"><div id="hojas"></div></div></div>
+
+<div class="flotante no-imp">
+  <button class="btn oro" id="imprimir">🖨️ Imprimir o guardar PDF</button>
+  <p class="msg" style="text-align:center">En el celular: elige <b>Guardar como PDF</b> para mandarlo a imprimir a un ciber.</p>
+</div>
+
+<script src="qrcode.js"></script>
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/red";
+const PLAZA = "https://apolobelden-sketch.github.io/fabrica-apps/red.html#n=";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pesos = (n) => n === "" || n == null || isNaN(n) ? "" : "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+const ligera = (u) => /^https:\/\/res\.cloudinary\.com\/dgdw8fbku\/image\/upload\//.test(u || "") ? u.replace(/\/image\/upload\/((?:[a-z]{1,3}_[^/]+\/)*)/, (_m, t) => `/image/upload/${t}f_auto,q_auto,w_400,c_limit/`) : (u || "");
+if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+
+// QR dibujado como SVG (nítido al imprimir a cualquier tamaño)
+function qrSvg(texto) {
+  const q = qrcode(0, "M"); q.addData(texto); q.make();
+  const n = q.getModuleCount(), m = 2; let d = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+  return `<svg viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+
+// ---------- Estado (se guarda en el teléfono) ----------
+let est = { slug: "", nombre: "", lema: "", wa: "", color: "#3b1466", general: "wa", diseno: "fotos", productos: [] };
+try { Object.assign(est, JSON.parse(localStorage.getItem("hojaqr") || "{}")); } catch (e) {}
+const guardar = () => { try { localStorage.setItem("hojaqr", JSON.stringify(est)); } catch (e) {} };
+const numWa = () => { const d = String(est.wa || "").replace(/\D/g, ""); return d.length === 10 ? "52" + d : d; };
+const telBonito = () => { const d = String(est.wa || "").replace(/\D/g, "").slice(-10); return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : est.wa; };
+const enlacePedido = (p) => `https://wa.me/${numWa()}?text=${encodeURIComponent(`Hola, quiero pedir: ${p.titulo}${p.precio !== "" && p.precio != null ? " (" + pesos(p.precio) + ")" : ""}`)}`;
+const enlaceGeneral = () => est.general === "perfil" && est.slug ? PLAZA + est.slug : `https://wa.me/${numWa()}?text=${encodeURIComponent("Hola, vi su hoja de productos. Quiero información.")}`;
+
+// Llenar campos
+for (const k of ["slug", "nombre", "lema", "wa", "color", "general"]) {
+  $(k).value = est[k] || (k === "color" ? "#3b1466" : k === "general" ? "wa" : "");
+  $(k).addEventListener("input", () => { est[k] = $(k).value; guardar(); pintar(); });
+}
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.get("n")) { $("slug").value = est.slug = hash.get("n").replace(/[^a-z0-9-]/g, ""); }
+document.querySelectorAll("#disenos .chip").forEach((b) => {
+  b.classList.toggle("si", b.dataset.d === est.diseno);
+  b.onclick = () => { est.diseno = b.dataset.d; document.querySelectorAll("#disenos .chip").forEach((x) => x.classList.toggle("si", x === b)); guardar(); pintar(); };
+});
+
+// ---------- Cargar de Plaza Emprende ----------
+async function cargarPlaza() {
+  const slug = $("slug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (!slug) { $("msgCarga").textContent = "Escribe el nombre del negocio como aparece en su enlace."; return; }
+  $("msgCarga").className = "msg"; $("msgCarga").textContent = "Cargando…";
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 20000);
+    const r = await fetch(FN + "?accion=negocio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }), signal: ctl.signal });
+    const d = await r.json();
+    if (!r.ok || !d.negocio) throw new Error(d.error || "No encontré ese negocio");
+    const n = d.negocio;
+    Object.assign(est, { slug, nombre: n.nombre, wa: String(n.whatsapp || "").replace(/^52/, ""), lema: est.lema || "" });
+    est.productos = (d.publicaciones || []).map((p) => ({ si: true, titulo: p.titulo, precio: p.precio ?? "", antes: p.precio_antes ?? "", desc: String(p.texto || "").replace(/https?:\/\/\S+/g, "").trim(), foto: p.imagen_url || "" }));
+    for (const k of ["nombre", "wa"]) $(k).value = est[k];
+    guardar(); listar(); pintar();
+    $("msgCarga").textContent = `✅ ${est.productos.length} productos de ${n.nombre}. Quita los que no quieras en la hoja.`;
+  } catch (e) { $("msgCarga").className = "msg mal"; $("msgCarga").textContent = "⚠️ " + (e.name === "AbortError" ? "La señal está lenta, intenta de nuevo." : e.message); }
+}
+$("cargar").onclick = cargarPlaza;
+
+// ---------- Lista editable ----------
+function listar() {
+  $("lista").innerHTML = est.productos.map((p, i) => `<div class="prod" data-i="${i}">
+    <input type="checkbox" data-k="si" ${p.si ? "checked" : ""} aria-label="Incluir">
+    <input data-k="titulo" value="${esc(p.titulo)}" placeholder="Producto">
+    <input data-k="precio" value="${esc(p.precio)}" inputmode="decimal" placeholder="Precio">
+    <button class="x" data-quitar="${i}" aria-label="Quitar">✕</button></div>`).join("");
+}
+$("lista").addEventListener("input", (e) => {
+  const fila = e.target.closest(".prod"), k = e.target.dataset.k; if (!fila || !k) return;
+  const p = est.productos[fila.dataset.i]; p[k] = k === "si" ? e.target.checked : e.target.value; guardar(); pintar();
+});
+$("lista").addEventListener("click", (e) => { const q = e.target.dataset.quitar; if (q != null) { est.productos.splice(Number(q), 1); guardar(); listar(); pintar(); } });
+$("agregar").onclick = () => { est.productos.push({ si: true, titulo: "", precio: "", antes: "", desc: "", foto: "" }); guardar(); listar(); const ins = $("lista").querySelectorAll('[data-k="titulo"]'); ins[ins.length - 1].focus(); };
+
+// ---------- Dibujar la hoja ----------
+function cabecera() {
+  return `<div class="h-cab"><div class="tit"><h3>${esc(est.nombre || "Mi negocio")}</h3><p>${esc(est.lema || "Escanea el QR del producto y tu pedido llega directo a WhatsApp")}</p><p><b>WhatsApp: ${esc(telBonito())}</b></p></div>
+    <div class="qrp"><div class="qr">${qrSvg(enlaceGeneral())}</div>${est.general === "perfil" ? "Ver todo" : "Escríbenos"}</div></div>`;
+}
+function tarjetaHoja(p) {
+  const precio = p.precio !== "" ? `<div class="pr">${pesos(p.precio)}${p.antes ? `<s>${pesos(p.antes)}</s>` : ""}</div>` : "";
+  const foto = p.foto ? `<img class="foto" src="${esc(ligera(p.foto))}" alt="">` : "";
+  return `<div class="t">${foto}<div class="info"><div class="txt"><h4>${esc(p.titulo || "Producto")}</h4>${precio}${p.desc ? `<div class="d">${esc(p.desc)}</div>` : ""}</div>
+    <div class="qrbox"><div class="qr">${qrSvg(enlacePedido(p))}</div><span>Escanea<br>y pide</span></div></div></div>`;
+}
+function pintar() {
+  document.documentElement.style.setProperty("--c", est.color || "#3b1466");
+  const prods = est.productos.filter((p) => p.si && (p.titulo || "").trim());
+  let html = "";
+  if (!numWa()) html = `<div class="hoja"><p style="font-size:6mm;color:#777;text-align:center;margin-top:40mm">Escribe el WhatsApp del negocio para crear los QR</p></div>`;
+  else if (est.diseno === "cartel") {
+    html = `<div class="hoja cartel"><div class="grande">${esc(est.nombre || "Mi negocio")}</div><div class="sub">${esc(est.lema || "¡Escanea y haz tu pedido por WhatsApp!")}</div>
+      <div class="qr">${qrSvg(enlaceGeneral())}</div><div class="tel">📱 ${esc(telBonito())}</div>
+      ${prods.length ? `<ul>${prods.slice(0, 5).map((p) => `<li>${esc(p.titulo)} ${p.precio !== "" ? `· <b>${pesos(p.precio)}</b>` : ""}</li>`).join("")}</ul>` : ""}</div>`;
+  } else {
+    const porHoja = est.diseno === "lista" ? 9 : 6;
+    for (let i = 0; i < Math.max(prods.length, 1); i += porHoja) {
+      const grupo = prods.slice(i, i + porHoja);
+      html += `<div class="hoja ${est.diseno === "lista" ? "lista" : ""}">${cabecera()}
+        <div class="rejilla">${grupo.length ? grupo.map(tarjetaHoja).join("") : `<p style="color:#777;font-size:5mm">Agrega productos arriba.</p>`}</div>
+        <p class="pie">Hecho con Hoja QR de Ediciones Guizar · Pide fácil por WhatsApp</p></div>`;
+    }
+  }
+  $("hojas").innerHTML = html;
+  ajustar();
+}
+function ajustar() {
+  const e = $("escala"), hoja = $("hojas").firstElementChild; if (!hoja) return;
+  const k = Math.min(1, ($("marco").clientWidth - 16) / hoja.offsetWidth);
+  e.style.transform = `scale(${k})`; e.style.height = $("hojas").offsetHeight * k + "px";
+}
+addEventListener("resize", ajustar);
+$("imprimir").onclick = () => window.print();
+
+listar(); pintar();
+if (est.slug && !est.productos.length) cargarPlaza();
+</script>
+</body>
+</html>
