@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Nube</title>
+<meta name="theme-color" content="#0f172a">
+<style>
+  :root { --fondo:#f1f5f9; --tarjeta:#fff; --texto:#0f172a; --suave:#64748b; --borde:#e2e8f0; --acento:#4f46e5; --ok:#16a34a; --mal:#dc2626; --aviso:#d97706; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#0b1120; --tarjeta:#111827; --texto:#e5e7eb; --suave:#94a3b8; --borde:#1f2937; --acento:#818cf8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--fondo); color:var(--texto); }
+  header { background:linear-gradient(135deg,#312e81,#4f46e5); color:#fff; padding:18px 16px 22px; }
+  header h1 { margin:0; font-size:22px; } header p { margin:4px 0 0; opacity:.85; font-size:14px; }
+  main { max-width:720px; margin:0 auto; padding:14px 16px 60px; }
+  .t { background:var(--tarjeta); border:1px solid var(--borde); border-radius:14px; padding:14px; margin-bottom:14px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  .barra { height:10px; background:var(--borde); border-radius:6px; overflow:hidden; }
+  .barra i { display:block; height:100%; background:var(--acento); }
+  .nodo { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--borde); font-size:14px; }
+  .nodo:first-of-type { border-top:0; }
+  .punto { width:10px; height:10px; border-radius:50%; flex:none; }
+  .nodo .n { flex:1; min-width:0; } .nodo small { color:var(--suave); display:block; overflow-wrap:anywhere; }
+  input, select, textarea, button { font:inherit; }
+  input[type=text], input[type=password], input[type=search], select, textarea { width:100%; padding:10px 12px; border:1px solid var(--borde); border-radius:10px; background:var(--fondo); color:var(--texto); }
+  button { border:0; border-radius:10px; padding:11px 14px; background:var(--acento); color:#fff; font-weight:600; cursor:pointer; }
+  button.sec { background:transparent; color:var(--acento); border:1px solid var(--acento); }
+  button:disabled { opacity:.5; }
+  .fila { display:flex; gap:8px; margin-top:8px; } .fila > * { flex:1; }
+  .arch { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--borde); }
+  .arch:first-child { border-top:0; }
+  .ico { font-size:24px; width:32px; text-align:center; }
+  .arch .n { flex:1; min-width:0; } .arch b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .arch small { color:var(--suave); }
+  .arch a { color:var(--acento); font-weight:600; text-decoration:none; white-space:nowrap; }
+  .msg { font-size:14px; margin-top:8px; color:var(--suave); }
+  .oculto { display:none; }
+  .chip { display:inline-block; font-size:12px; padding:2px 8px; border-radius:20px; background:var(--fondo); border:1px solid var(--borde); color:var(--suave); }
+</style>
+</head>
+<body>
+<header>
+  <h1>☁️ Mi Nube</h1>
+  <p>Tus archivos cifrados y repartidos en varios lugares</p>
+</header>
+<main>
+  <section class="t" id="candado">
+    <h2>🔒 Código de acceso</h2>
+    <input type="password" id="cod" placeholder="Tu código" autocomplete="current-password">
+    <div class="fila"><button id="entrar">Entrar</button></div>
+    <div class="msg" id="mcand"></div>
+  </section>
+
+  <div id="app" class="oculto">
+    <section class="t">
+      <h2>Espacio</h2>
+      <div class="barra"><i id="barra" style="width:0"></i></div>
+      <div class="msg" id="resumen">Cargando…</div>
+      <div id="nodos" style="margin-top:8px"></div>
+      <div class="fila"><button class="sec" id="pulso">Revisar nodos</button><button class="sec" id="reparar">Reparar</button></div>
+    </section>
+
+    <section class="t">
+      <h2>Subir archivo</h2>
+      <input type="file" id="archivo">
+      <div class="fila"><input type="text" id="carpeta" placeholder="Carpeta (ej. libros, fotos, respaldos)"></div>
+      <div class="fila"><input type="text" id="desc" placeholder="Descripción (opcional)"></div>
+      <div class="fila"><button id="subir">Guardar en mi nube</button></div>
+      <div class="msg" id="msub">Máximo 20 MB por archivo.</div>
+    </section>
+
+    <section class="t">
+      <h2>Guardar una nota</h2>
+      <input type="text" id="ntit" placeholder="Título">
+      <div class="fila"><textarea id="ntex" rows="4" placeholder="Escribe aquí…"></textarea></div>
+      <div class="fila"><button id="nguardar">Guardar nota</button></div>
+      <div class="msg" id="mnota"></div>
+    </section>
+
+    <section class="t">
+      <h2>Mis archivos</h2>
+      <input type="search" id="buscar" placeholder="Buscar por nombre, carpeta o contenido">
+      <div id="lista" style="margin-top:8px"></div>
+    </section>
+  </div>
+</main>
+<script>
+const API = "https://pnjglzuxsyahxcbgjwvq.supabase.co/functions/v1/nube";
+const $ = (id) => document.getElementById(id);
+let clave = "";
+try { clave = localStorage.getItem("nube_clave") || ""; } catch {}
+
+async function api(accion, cuerpo = {}) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json", "x-fabrica-clave": clave }, body: JSON.stringify(cuerpo) });
+  const d = await r.json().catch(() => ({ error: "Respuesta inválida" }));
+  if (r.status === 401) { salir(); throw new Error("Código incorrecto"); }
+  if (!r.ok || d.error) throw new Error(d.error || "Error " + r.status);
+  return d;
+}
+function salir() { try { localStorage.removeItem("nube_clave"); } catch {} $("app").classList.add("oculto"); $("candado").classList.remove("oculto"); }
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const tam = (kb) => kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : kb + " KB";
+const icono = (t) => /^image/.test(t) ? "🖼️" : /pdf/.test(t) ? "📕" : /^text|json|csv/.test(t) ? "📝" : /^video/.test(t) ? "🎬" : /^audio/.test(t) ? "🎵" : "📦";
+
+async function estado() {
+  const d = await api("estado");
+  const pct = d.capacidad_total_mb ? Math.max(1, Math.round(d.usado_total_mb / d.capacidad_total_mb * 100)) : 0;
+  $("barra").style.width = pct + "%";
+  $("resumen").textContent = `${d.archivos} archivos · ${d.usado_total_mb} MB usados de ${(d.capacidad_total_mb / 1024).toFixed(1)} GB`;
+  $("nodos").innerHTML = d.nodos.map((n) => {
+    const color = !n.activo ? "var(--suave)" : n.estado === "ok" ? "var(--ok)" : n.estado === "error" ? "var(--mal)" : "var(--aviso)";
+    const txt = !n.activo ? "apagado (falta conectar)" : n.estado === "ok" ? `sano · ${n.latencia_ms ?? "–"} ms` : n.estado === "error" ? "con falla" : "sin probar";
+    return `<div class="nodo"><span class="punto" style="background:${color}"></span><div class="n">${esc(n.nombre)}<small>${txt}${n.error && n.activo ? " — " + esc(n.error) : ""}</small></div><span class="chip">${n.usado_mb} / ${n.cupo_mb >= 1024 ? Math.round(n.cupo_mb / 1024) + " GB" : n.cupo_mb + " MB"}</span></div>`;
+  }).join("");
+}
+
+let tBus;
+async function listar() {
+  const d = await api("buscar", { texto: $("buscar").value.trim() });
+  $("lista").innerHTML = d.archivos.length ? d.archivos.map((a) => `<div class="arch"><div class="ico">${icono(a.tipo)}</div><div class="n"><b>${esc(a.nombre)}</b><small>${esc(a.carpeta)} · ${tam(a.tamano_kb)} · ${a.fecha}</small></div><a href="${a.enlace}" target="_blank" rel="noopener">Abrir</a></div>`).join("") : '<div class="msg">No hay archivos todavía.</div>';
+}
+async function todo() { await Promise.all([estado(), listar()]).catch((e) => { $("resumen").textContent = "⚠️ " + e.message; }); }
+
+$("entrar").onclick = async () => {
+  clave = $("cod").value.trim().toLowerCase();
+  $("mcand").textContent = "Revisando…";
+  try { await api("estado"); try { localStorage.setItem("nube_clave", clave); } catch {} abrir(); }
+  catch (e) { $("mcand").textContent = "⚠️ " + e.message; }
+};
+function abrir() { $("candado").classList.add("oculto"); $("app").classList.remove("oculto"); todo(); }
+
+$("subir").onclick = async () => {
+  const f = $("archivo").files[0];
+  if (!f) return ($("msub").textContent = "Elige un archivo primero.");
+  if (f.size > 20 * 1024 * 1024) return ($("msub").textContent = "⚠️ Ese archivo pasa de 20 MB.");
+  $("subir").disabled = true; $("msub").textContent = "Cifrando y repartiendo…";
+  try {
+    const base64 = await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = mal; r.readAsDataURL(f); });
+    const d = await api("guardar", { nombre: f.name, mime: f.type || "application/octet-stream", base64, carpeta: $("carpeta").value.trim() || "general", descripcion: $("desc").value.trim() || undefined });
+    $("msub").textContent = d.ya_existia ? "✅ Ese archivo ya estaba en tu nube." : `✅ Guardado en: ${d.en.join(", ")}`;
+    $("archivo").value = ""; todo();
+  } catch (e) { $("msub").textContent = "⚠️ " + e.message; }
+  $("subir").disabled = false;
+};
+$("nguardar").onclick = async () => {
+  const nombre = $("ntit").value.trim(), texto = $("ntex").value;
+  if (!nombre || !texto.trim()) return ($("mnota").textContent = "Pon título y texto.");
+  $("nguardar").disabled = true; $("mnota").textContent = "Guardando…";
+  try { await api("guardar", { nombre, texto, carpeta: "notas" }); $("mnota").textContent = "✅ Nota guardada."; $("ntit").value = ""; $("ntex").value = ""; listar(); }
+  catch (e) { $("mnota").textContent = "⚠️ " + e.message; }
+  $("nguardar").disabled = false;
+};
+$("buscar").oninput = () => { clearTimeout(tBus); tBus = setTimeout(() => listar().catch(() => {}), 400); };
+$("pulso").onclick = async () => { $("resumen").textContent = "Revisando cada nodo…"; try { await api("pulso"); } catch {} estado(); };
+$("reparar").onclick = async () => { $("resumen").textContent = "Reparando…"; try { const d = await api("reparar"); $("resumen").textContent = `Revisados: ${d.revisados}`; } catch (e) { $("resumen").textContent = "⚠️ " + e.message; } setTimeout(estado, 1500); };
+if (clave) abrir();
+</script>
+</body>
+</html>
