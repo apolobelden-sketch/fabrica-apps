@@ -164,7 +164,10 @@ const Q = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/q";
 $("contar").checked = est.contar !== false; $("lugar").value = est.lugar || "";
 $("cajaLugar").hidden = !$("contar").checked;
 $("contar").onchange = () => { est.contar = $("contar").checked; $("cajaLugar").hidden = !est.contar; guardar(); pintar(); };
-let tl; $("lugar").oninput = () => { est.lugar = $("lugar").value; guardar(); clearTimeout(tl); tl = setTimeout(pintar, 600); };
+// El contador se activa cuando terminas de escribir el lugar (no con cada letra)
+let tl, escribiendoLugar = false;
+$("lugar").oninput = () => { est.lugar = $("lugar").value; guardar(); escribiendoLugar = true; clearTimeout(tl); tl = setTimeout(() => { escribiendoLugar = false; pintar(); }, 2500); };
+$("lugar").onchange = () => { clearTimeout(tl); escribiendoLugar = false; pintar(); };
 // Códigos del contador: se piden al servidor una vez y se recuerdan
 let codigos = {}; try { codigos = JSON.parse(localStorage.getItem("hojaqr_codigos") || "{}"); } catch (e) {}
 const negocioId = () => (est.slug || String(est.nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")).slice(0, 60);
@@ -275,7 +278,8 @@ function pintar() {
   }
   $("hojas").innerHTML = html;
   ajustar();
-  if (faltantes.length) { $("msgContar").className = "msg"; $("msgContar").textContent = "Activando contador…"; pedirCodigos(faltantes.slice(0, 40)); }
+  if (faltantes.length && !escribiendoLugar) { $("msgContar").className = "msg"; $("msgContar").textContent = "Activando contador…"; pedirCodigos(faltantes.slice(0, 40)); }
+  else if (faltantes.length) { $("msgContar").className = "msg"; $("msgContar").textContent = "Cuando termines de escribir el lugar, activo el contador…"; }
 }
 function ajustar() {
   const e = $("escala"), hoja = $("hojas").firstElementChild; if (!hoja) return;
@@ -283,7 +287,8 @@ function ajustar() {
   e.style.transform = `scale(${k})`; e.style.height = $("hojas").offsetHeight * k + "px";
 }
 addEventListener("resize", ajustar);
-$("imprimir").onclick = () => {
+$("imprimir").onclick = async () => {
+  if (escribiendoLugar) { clearTimeout(tl); escribiendoLugar = false; pintar(); await new Promise((r) => setTimeout(r, 2500)); }
   if (est.contar && faltantes.length && !confirm("El contador todavía no está activo (falta señal). ¿Imprimir así? Los QR funcionan pero no contarán.")) return;
   window.print();
 };
