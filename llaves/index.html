@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasar llaves</title>
+<meta name="theme-color" content="#7c2d12">
+<style>
+  :root { --fondo:#f1f5f9; --tarjeta:#fff; --texto:#0f172a; --suave:#64748b; --borde:#e2e8f0; --acento:#c2410c; --ok:#16a34a; --mal:#dc2626; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#0b1120; --tarjeta:#111827; --texto:#e5e7eb; --suave:#94a3b8; --borde:#1f2937; --acento:#fb923c; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); color:var(--texto); }
+  header { background:linear-gradient(135deg,#7c2d12,#c2410c); color:#fff; padding:18px 16px 20px; }
+  header h1 { margin:0; font-size:22px; } header p { margin:4px 0 0; opacity:.9; font-size:14px; }
+  main { max-width:640px; margin:0 auto; padding:14px 16px 60px; }
+  .t { background:var(--tarjeta); border:1px solid var(--borde); border-radius:14px; padding:14px; margin-bottom:14px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  .paso { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--acento); color:#fff; align-items:center; justify-content:center; font-size:13px; font-weight:700; margin-right:6px; }
+  label { display:block; font-size:13px; color:var(--suave); margin:12px 0 4px; }
+  input[type=password], textarea { width:100%; padding:11px 12px; border:1px solid var(--borde); border-radius:10px; background:var(--fondo); color:var(--texto); font:inherit; }
+  textarea.llave { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:17px; letter-spacing:1px; resize:vertical; }
+  button.grande { width:100%; border:0; border-radius:12px; padding:13px; background:var(--acento); color:#fff; font-weight:700; font-size:16px; margin-top:12px; font-family:inherit; }
+  button:disabled { opacity:.5; }
+  .foto { display:flex; align-items:center; justify-content:center; min-height:110px; border:2px dashed var(--borde); border-radius:12px; color:var(--suave); text-align:center; padding:10px; cursor:pointer; }
+  .visor { max-height:340px; overflow:auto; border-radius:10px; border:1px solid var(--borde); margin-top:10px; }
+  .visor img { width:180%; display:block; }
+  .msg { font-size:14px; color:var(--suave); margin-top:8px; }
+  .cuenta { font-size:12px; float:right; }
+  .ok { color:var(--ok); } .mal { color:var(--mal); }
+  .barra { height:8px; background:var(--borde); border-radius:6px; overflow:hidden; margin-top:8px; }
+  .barra i { display:block; height:100%; width:0; background:var(--acento); transition:width .3s; }
+  .aviso { background:#fff7ed; color:#7c2d12; border-radius:10px; padding:10px 12px; font-size:14px; }
+  @media (prefers-color-scheme: dark) { .aviso { background:#431407; color:#fed7aa; } }
+  .resultado { font-size:18px; font-weight:800; text-align:center; padding:14px; border-radius:12px; color:#fff; }
+  .oculto { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔑 Pasar llaves</h1>
+  <p>Conecta Hugging Face a tu nube copiando todo de una sola vez (o con una captura). Sin brincar entre apps.</p>
+</header>
+<main>
+  <section class="t" id="candado">
+    <h2>🔒 Código de acceso</h2>
+    <input type="password" id="cod" placeholder="Tu código" autocomplete="current-password">
+    <button class="grande" id="entrar">Entrar</button>
+    <div class="msg" id="mcand"></div>
+  </section>
+
+  <div id="app" class="oculto">
+    <section class="t">
+      <div class="aviso">🛡️ La captura se lee <b>aquí dentro de tu celular</b>; no se sube a ningún lado. Solo las 2 llaves viajan cifradas a tu propia nube.</div>
+      <h2 style="margin-top:14px"><span class="paso">1</span>En Hugging Face</h2>
+      <div class="msg" style="margin-top:0">En tu token <b>nube-jairo</b> toca <b>⋮ → Generate S3 credentials</b>. Cuando salgan las 2 llaves:</div>
+      <ol class="msg" style="padding-left:20px">
+        <li><b>Mantén presionada</b> la palabra "Access" (o cualquier texto de esa ventanita).</li>
+        <li>En el menú que sale toca <b>Seleccionar todo</b>.</li>
+        <li>Toca <b>Copiar</b>. Así se copian las 2 llaves juntas, de una sola vez.</li>
+        <li>Por si acaso, toma también <b>captura de pantalla</b>.</li>
+      </ol>
+    </section>
+
+    <section class="t">
+      <h2><span class="paso">2</span>Pega lo que copiaste <span style="font-weight:400;color:var(--suave)">(lo más exacto)</span></h2>
+      <button class="grande" id="pegar" style="margin-top:0">📋 Pegar desde el portapapeles</button>
+      <textarea id="pegado" rows="3" placeholder="…o mantén presionado aquí y elige Pegar" style="margin-top:10px"></textarea>
+      <div class="msg" id="mpegar"></div>
+    </section>
+
+    <section class="t">
+      <h2><span class="paso">2b</span>¿No se pudo copiar? Usa la captura</h2>
+      <div class="foto" id="zona">📷 Toca para elegir la captura</div>
+      <input type="file" id="archivo" accept="image/*" class="oculto">
+      <div class="barra oculto" id="barra"><i id="progreso"></i></div>
+      <div class="msg" id="mfoto"></div>
+      <div class="visor oculto" id="visor"><img id="imgvista" alt="Tu captura"></div>
+    </section>
+
+    <section class="t">
+      <h2><span class="paso">3</span>Revisa las llaves</h2>
+      <div class="msg" style="margin-top:0">Compáralas con la captura de arriba (puedes deslizarla). Si alguna letra salió mal, corrígela aquí mismo. Ojo con <b>0/O</b>, <b>1/l/I</b> y <b>5/S</b>.</div>
+      <label for="key">Access key ID <span class="cuenta" id="ckey"></span></label>
+      <textarea class="llave" id="key" rows="2" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="HFAK…"></textarea>
+      <label for="secret">Secret access key <span class="cuenta" id="csec"></span></label>
+      <textarea class="llave" id="secret" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="La llave larga"></textarea>
+      <button class="grande" id="guardar">Guardar en mi nube y probar</button>
+      <div class="msg" id="mguardar"></div>
+    </section>
+
+    <section class="t oculto" id="final">
+      <div class="resultado" id="res"></div>
+      <div class="msg" id="resnota"></div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const API = "https://pnjglzuxsyahxcbgjwvq.supabase.co/functions/v1/nube";
+const $ = (id) => document.getElementById(id);
+let clave = "";
+try { clave = localStorage.getItem("nube_clave") || ""; } catch {}
+
+async function api(accion, cuerpo) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json", "x-fabrica-clave": clave }, body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json().catch(() => ({ error: "Respuesta inválida" }));
+  if (r.status === 401) { $("app").classList.add("oculto"); $("candado").classList.remove("oculto"); throw new Error("Código incorrecto"); }
+  if (!r.ok && d.error) throw new Error(d.error);
+  return d;
+}
+$("entrar").onclick = async () => {
+  clave = $("cod").value.trim().toLowerCase(); $("mcand").textContent = "Revisando…";
+  try { await api("estado"); try { localStorage.setItem("nube_clave", clave); } catch {} abrir(); } catch (e) { $("mcand").textContent = "⚠️ " + e.message; }
+};
+function abrir() { $("candado").classList.add("oculto"); $("app").classList.remove("oculto"); }
+
+// Cuenta de letras (la ID trae 31 y el Secret 64 en Hugging Face)
+function contar() {
+  const k = $("key").value.replace(/\s/g, ""), s = $("secret").value.replace(/\s/g, "");
+  $("ckey").innerHTML = k ? `<span class="${/^HFAK[A-Za-z0-9]+$/.test(k) && k.length === 31 ? "ok" : "mal"}">${k.length} letras${k.length === 31 ? " ✓" : " (normalmente 31)"}</span>` : "";
+  $("csec").innerHTML = s ? `<span class="${/^[A-Za-z0-9]+$/.test(s) && s.length === 64 ? "ok" : "mal"}">${s.length} letras${s.length === 64 ? " ✓" : " (normalmente 64)"}</span>` : "";
+}
+$("key").oninput = contar; $("secret").oninput = contar;
+
+// Prepara la imagen para leerla mejor: más grande, en blanco y negro
+async function preparar(file) {
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = URL.createObjectURL(file); });
+  const k = Math.min(2.2, 2600 / img.width);
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  let suma = 0; for (let i = 0; i < p.length; i += 4) suma += p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114;
+  const oscuro = suma / (p.length / 4) < 128; // modo oscuro: se invierte
+  for (let i = 0; i < p.length; i += 4) { let y = p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114; if (oscuro) y = 255 - y; const v = y > 165 ? 255 : y < 110 ? 0 : (y - 110) * 255 / 55; p[i] = p[i + 1] = p[i + 2] = v; }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
+// Saca las 2 llaves de cualquier texto (pegado o leído de la captura)
+function sacarLlaves(texto) {
+  const lineas = String(texto).split(/\n+/).map((l) => l.replace(/\s+/g, "")).filter(Boolean);
+  const junto = lineas.join("\n");
+  // ID: HFAK + 27 letras/números (31 en total)
+  let key = "";
+  const plano = junto.replace(/\n/g, "");
+  const mk = plano.match(/HFAK[A-Za-z0-9]{27}/) || junto.match(/HFAK[A-Za-z0-9]{8,}/);
+  if (mk) key = mk[0].slice(0, 31);
+  // Secret: lo que sigue a la etiqueta "Secret access key"; si no hay etiqueta, la cadena larga que no es la ID
+  let secret = "";
+  const sinKey = key ? plano.replace(key, "\u0000") : plano;
+  const ms = sinKey.match(/secret[_ ]?access[_ ]?key[^A-Za-z0-9]{0,6}([A-Za-z0-9]{40,64})/i);
+  if (ms) secret = ms[1].slice(0, 64);
+  if (!secret) {
+    const cands = lineas.filter((l) => /^[A-Za-z0-9]{12,}$/.test(l) && !/^HFAK/.test(l) && !/^hf_/i.test(l));
+    for (let i = 0; i < cands.length && !secret; i++) { let x = cands[i]; for (let k = i + 1; k < cands.length && x.length < 64; k++) x += cands[k]; if (x.length >= 40) secret = x.slice(0, 64); }
+  }
+  return { key, secret };
+}
+function ponerLlaves(t, origen) {
+  const { key, secret } = sacarLlaves(t);
+  if (key) $("key").value = key;
+  if (secret) $("secret").value = secret;
+  contar();
+  return key || secret ? `✅ Encontré ${key && secret ? "las 2 llaves" : key ? "la ID (falta el Secret)" : "el Secret (falta la ID)"}${origen === "foto" ? ". Revísalas letra por letra contra la captura." : "."}` : "No encontré las llaves en eso. Intenta otra vez.";
+}
+$("pegar").onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); $("pegado").value = t; $("mpegar").textContent = ponerLlaves(t, "texto"); }
+  catch { $("mpegar").textContent = "Mantén presionado el cuadro de abajo y elige Pegar."; $("pegado").focus(); }
+};
+$("pegado").oninput = () => { $("mpegar").textContent = ponerLlaves($("pegado").value, "texto"); };
+
+$("zona").onclick = () => $("archivo").click();
+$("archivo").onchange = async () => {
+  const f = $("archivo").files[0]; if (!f) return;
+  $("imgvista").src = URL.createObjectURL(f); $("visor").classList.remove("oculto");
+  $("zona").textContent = "📷 Elegir otra captura";
+  $("barra").classList.remove("oculto"); $("progreso").style.width = "5%";
+  $("mfoto").textContent = "Leyendo la captura en tu celular… (la primera vez tarda un poco más)";
+  try {
+    if (!window.Tesseract) throw new Error("No cargó el lector. Revisa tu internet y recarga la página.");
+    const lienzo = await preparar(f);
+    const r = await Tesseract.recognize(lienzo, "eng", { logger: (m) => { if (m.status === "recognizing text") $("progreso").style.width = Math.max(10, Math.round(m.progress * 100)) + "%"; } });
+    $("progreso").style.width = "100%";
+    $("mfoto").textContent = ponerLlaves(r.data.text || "", "foto") + " El lector puede confundir 0/O, 1/l/I.";
+  } catch (e) { $("mfoto").textContent = "⚠️ " + e.message; }
+};
+
+$("guardar").onclick = async () => {
+  const key = $("key").value.replace(/\s/g, ""), secret = $("secret").value.replace(/\s/g, "");
+  if (!key || !secret) return ($("mguardar").textContent = "Faltan las 2 llaves.");
+  $("guardar").disabled = true; $("mguardar").textContent = "Guardando y probando con Hugging Face…";
+  try {
+    const d = await api("llaves_hf", { key, secret });
+    $("final").classList.remove("oculto");
+    if (d.ok) {
+      $("res").style.background = "var(--ok)"; $("res").textContent = "✅ Hugging Face conectado a tu nube";
+      $("resnota").innerHTML = `${d.nota}<br><br>Ya puedes <b>borrar la captura</b> de tu galería. Ve tu nube en <a href="../nube/">Mi Nube</a>.`;
+      $("mguardar").textContent = "";
+    } else {
+      $("res").style.background = "var(--mal)"; $("res").textContent = "❌ Todavía no conecta";
+      $("resnota").textContent = d.error + " No se guardó nada malo: tu nube sigue como estaba.";
+      $("mguardar").textContent = "";
+    }
+    $("final").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { $("mguardar").textContent = "⚠️ " + e.message; }
+  $("guardar").disabled = false;
+};
+if (clave) abrir();
+</script>
+</body>
+</html>
