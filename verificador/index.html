@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verificador</title>
+<meta name="theme-color" content="#065f46">
+<style>
+  :root { --fondo:#f1f5f9; --tarjeta:#fff; --texto:#0f172a; --suave:#64748b; --borde:#e2e8f0; --acento:#047857; --rojo:#dc2626; --amar:#d97706; --verde:#16a34a; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#0b1120; --tarjeta:#111827; --texto:#e5e7eb; --suave:#94a3b8; --borde:#1f2937; --acento:#34d399; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); color:var(--texto); }
+  header { background:linear-gradient(135deg,#064e3b,#047857); color:#fff; padding:18px 16px 14px; }
+  header h1 { margin:0; font-size:22px; } header p { margin:4px 0 12px; opacity:.85; font-size:14px; }
+  .tabs { display:flex; gap:8px; }
+  .tabs button { flex:1; background:rgba(255,255,255,.15); color:#fff; border:0; border-radius:10px; padding:10px; font-weight:600; font-size:15px; }
+  .tabs button.on { background:#fff; color:#064e3b; }
+  main { max-width:640px; margin:0 auto; padding:14px 16px 60px; }
+  .t { background:var(--tarjeta); border:1px solid var(--borde); border-radius:14px; padding:14px; margin-bottom:14px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  label { display:block; font-size:13px; color:var(--suave); margin:10px 0 4px; }
+  input, textarea, button { font:inherit; }
+  input[type=text], input[type=password], input[type=number], input[type=url], textarea { width:100%; padding:11px 12px; border:1px solid var(--borde); border-radius:10px; background:var(--fondo); color:var(--texto); }
+  button.grande { width:100%; border:0; border-radius:12px; padding:13px; background:var(--acento); color:#fff; font-weight:700; font-size:16px; margin-top:12px; }
+  button:disabled { opacity:.5; }
+  .foto { display:flex; align-items:center; justify-content:center; min-height:120px; border:2px dashed var(--borde); border-radius:12px; color:var(--suave); text-align:center; padding:10px; cursor:pointer; }
+  .foto img { max-width:100%; max-height:260px; border-radius:8px; }
+  .semaforo { font-size:20px; font-weight:800; padding:12px; border-radius:12px; text-align:center; color:#fff; }
+  .s-rojo { background:var(--rojo); } .s-amarillo { background:var(--amar); } .s-verde { background:var(--verde); }
+  ul.alertas { list-style:none; padding:0; margin:12px 0 0; }
+  ul.alertas li { padding:9px 10px; border-radius:10px; margin-bottom:6px; font-size:14px; background:var(--fondo); border-left:4px solid var(--suave); }
+  ul.alertas li.alto { border-left-color:var(--rojo); } ul.alertas li.medio { border-left-color:var(--amar); }
+  .campo { display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--borde); font-size:14px; }
+  .campo:first-of-type { border-top:0; }
+  .campo .n { flex:1; min-width:0; } .campo small { display:block; color:var(--suave); } .campo b { overflow-wrap:anywhere; }
+  .copiar { border:1px solid var(--acento); color:var(--acento); background:transparent; border-radius:8px; padding:6px 10px; font-weight:600; font-size:13px; white-space:nowrap; }
+  .botones { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .botones button { border:1px solid var(--borde); background:var(--fondo); color:var(--texto); border-radius:10px; padding:10px 6px; font-size:14px; font-weight:600; }
+  a.banxico { display:block; text-align:center; background:#1e3a8a; color:#fff; text-decoration:none; padding:12px; border-radius:12px; font-weight:700; margin-top:10px; }
+  .msg { font-size:14px; color:var(--suave); margin-top:8px; }
+  .oculto { display:none !important; }
+  .hist { font-size:14px; padding:8px 0; border-top:1px solid var(--borde); display:flex; gap:8px; }
+  .hist:first-child { border-top:0; }
+  ol { padding-left:20px; margin:8px 0 0; } ol li { margin-bottom:4px; font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡️ Verificador</h1>
+  <p>Que no te vean la cara: revisa pagos y links antes de entregar o comprar.</p>
+  <div class="tabs" id="tabs"><button data-t="pago" class="on">💸 Pago</button><button data-t="link">🔗 Link</button><button data-t="hist">📋 Historial</button></div>
+</header>
+<main>
+  <section class="t" id="candado">
+    <h2>🔒 Código de acceso</h2>
+    <input type="password" id="cod" placeholder="Tu código" autocomplete="current-password">
+    <button class="grande" id="entrar">Entrar</button>
+    <div class="msg" id="mcand"></div>
+  </section>
+
+  <div id="app" class="oculto">
+    <!-- PAGO -->
+    <div id="v-pago">
+      <section class="t">
+        <h2>Revisar un comprobante</h2>
+        <div class="foto" id="zona">📷 Toca para elegir la captura del comprobante que te mandaron</div>
+        <input type="file" id="archivo" accept="image/*" class="oculto">
+        <label for="esperado">¿Cuánto te debían pagar? (recomendado)</label>
+        <input type="number" id="esperado" inputmode="decimal" placeholder="Ej. 450">
+        <label for="micuenta">Tu CLABE o los últimos 4 dígitos de tu cuenta (se recuerda en este celular)</label>
+        <input type="text" id="micuenta" inputmode="numeric" placeholder="Ej. 1234">
+        <button class="grande" id="revisar">Revisar comprobante</button>
+        <div class="msg" id="mpago"></div>
+      </section>
+
+      <div id="res-pago" class="oculto">
+        <section class="t">
+          <div class="semaforo" id="sem"></div>
+          <ul class="alertas" id="alertas"></ul>
+          <h2 style="margin-top:14px">Qué hacer</h2>
+          <ol id="pasos"></ol>
+        </section>
+        <section class="t" id="ficha-t">
+          <h2>Ficha para confirmar en Banxico</h2>
+          <div class="msg" style="margin:0 0 6px">Copia cada dato con su botón y pégalo en el portal oficial. Tú resuelves el captcha.</div>
+          <div id="ficha"></div>
+          <a class="banxico" href="https://www.banxico.org.mx/cep/" target="_blank" rel="noopener">Abrir portal de Banxico ↗</a>
+        </section>
+        <section class="t">
+          <h2>¿Qué resultó?</h2>
+          <div class="botones">
+            <button data-r="liquidada">✅ Banxico: liquidada</button>
+            <button data-r="confirmado_en_app">✅ Ya lo vi en mi app</button>
+            <button data-r="no_encontrada">❌ Banxico: no existe</button>
+            <button data-r="falso">❌ Era falso</button>
+            <button data-r="en_proceso">⏳ Sigue en proceso</button>
+            <button data-r="devuelta">↩️ Fue devuelta</button>
+          </div>
+          <div class="msg" id="mres"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- LINK -->
+    <div id="v-link" class="oculto">
+      <section class="t">
+        <h2>Revisar un link</h2>
+        <textarea id="url" rows="3" placeholder="Pega aquí el link o el mensaje completo que te llegó"></textarea>
+        <button class="grande" id="revisarlink">Revisar link</button>
+        <div class="msg" id="mlink"></div>
+      </section>
+      <section class="t oculto" id="res-link">
+        <div class="semaforo" id="lsem"></div>
+        <div class="msg" id="ldom" style="text-align:center"></div>
+        <ul class="alertas" id="lalertas"></ul>
+        <div class="msg" id="lconsejo" style="color:var(--texto);font-weight:600"></div>
+      </section>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="v-hist" class="oculto">
+      <section class="t">
+        <h2>Pagos revisados (30 días)</h2>
+        <div class="msg" id="hres"></div>
+        <div id="hlista"></div>
+      </section>
+    </div>
+  </div>
+</main>
+<script>
+const API = "https://pnjglzuxsyahxcbgjwvq.supabase.co/functions/v1/verificar";
+const $ = (id) => document.getElementById(id);
+const leer = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+let clave = leer("verif_clave"), imagen = null, huella = null, idPago = null;
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function api(accion, cuerpo) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json", "x-fabrica-clave": clave }, body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json().catch(() => ({ error: "Respuesta inválida" }));
+  if (r.status === 401) { try { localStorage.removeItem("verif_clave"); } catch {} $("app").classList.add("oculto"); $("candado").classList.remove("oculto"); throw new Error("Código incorrecto"); }
+  if (!r.ok || d.error) throw new Error(d.error || "Error " + r.status);
+  return d;
+}
+
+// Pestañas
+document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  for (const t of ["pago", "link", "hist"]) $("v-" + t).classList.toggle("oculto", t !== b.dataset.t);
+  if (b.dataset.t === "hist") historial();
+});
+
+$("entrar").onclick = async () => {
+  clave = $("cod").value.trim().toLowerCase(); $("mcand").textContent = "Revisando…";
+  try { await api("pagos", { dias: 1 }); guardar("verif_clave", clave); abrir(); } catch (e) { $("mcand").textContent = "⚠️ " + e.message; }
+};
+function abrir() { $("candado").classList.add("oculto"); $("app").classList.remove("oculto"); $("micuenta").value = leer("verif_micuenta"); }
+
+// Foto: se calcula su huella original y se achica para mandarla rápido aunque haya poca señal
+$("zona").onclick = () => $("archivo").click();
+$("archivo").onchange = async () => {
+  const f = $("archivo").files[0]; if (!f) return;
+  huella = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await f.arrayBuffer()))).map((x) => x.toString(16).padStart(2, "0")).join("");
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = URL.createObjectURL(f); });
+  const max = 1600, k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  imagen = c.toDataURL("image/jpeg", 0.88);
+  $("zona").innerHTML = `<img src="${imagen}" alt="Comprobante">`;
+  $("res-pago").classList.add("oculto");
+};
+
+function copiar(texto, boton) {
+  const ok = () => { const t = boton.textContent; boton.textContent = "✓ Copiado"; setTimeout(() => (boton.textContent = t), 1500); };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(texto).then(ok, () => respaldo());
+  else respaldo();
+  function respaldo() { const a = document.createElement("textarea"); a.value = texto; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); ok(); } catch {} a.remove(); }
+}
+
+$("revisar").onclick = async () => {
+  if (!imagen) return ($("mpago").textContent = "Primero elige la foto del comprobante.");
+  const mi = $("micuenta").value.replace(/\D/g, ""); if (mi) guardar("verif_micuenta", mi);
+  $("revisar").disabled = true; $("mpago").textContent = "Leyendo el comprobante con IA… (10 a 20 segundos)";
+  try {
+    const d = await api("pago", { imagen, huella, monto_esperado: Number($("esperado").value) || undefined, mi_cuenta: mi || undefined });
+    idPago = d.id;
+    $("sem").className = "semaforo s-" + d.veredicto; $("sem").textContent = d.semaforo;
+    $("alertas").innerHTML = d.alertas.length ? d.alertas.map((a) => `<li class="${a.nivel}">${a.nivel === "alto" ? "🚩" : a.nivel === "medio" ? "⚠️" : "ℹ️"} ${esc(a.texto)}</li>`).join("") : '<li>No encontré señales de alerta en el comprobante.</li>';
+    $("pasos").innerHTML = d.que_hacer.map((p) => `<li>${esc(p)}</li>`).join("");
+    const f = d.ficha_banxico;
+    const filas = [["Fecha de la operación", f.fecha], ["Clave de rastreo", f.clave_rastreo], ["Banco emisor", f.banco_emisor], ["Banco receptor", f.banco_receptor], ["Cuenta beneficiaria", f.cuenta_beneficiaria], ["Monto", f.monto]];
+    $("ficha").innerHTML = filas.map(([n, v], i) => `<div class="campo"><div class="n"><small>${n}</small><b>${esc(v || "— no se leyó —")}</b></div>${v ? `<button class="copiar" data-i="${i}">Copiar</button>` : ""}</div>`).join("");
+    $("ficha").querySelectorAll(".copiar").forEach((b) => b.onclick = () => copiar(String(filas[b.dataset.i][1]), b));
+    $("res-pago").classList.remove("oculto"); $("mpago").textContent = ""; $("mres").textContent = "";
+    $("sem").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { $("mpago").textContent = "⚠️ " + e.message; }
+  $("revisar").disabled = false;
+};
+document.querySelectorAll("[data-r]").forEach((b) => b.onclick = async () => {
+  if (!idPago) return;
+  try { await api("resultado", { id: idPago, banxico: b.dataset.r }); $("mres").textContent = "✅ Guardado en tu historial."; } catch (e) { $("mres").textContent = "⚠️ " + e.message; }
+});
+
+$("revisarlink").onclick = async () => {
+  const url = $("url").value.trim(); if (!url) return ($("mlink").textContent = "Pega un link primero.");
+  $("revisarlink").disabled = true; $("mlink").textContent = "Revisando el sitio…";
+  try {
+    const d = await api("link", { url });
+    $("lsem").className = "semaforo s-" + d.veredicto; $("lsem").textContent = d.semaforo;
+    $("ldom").textContent = d.dominio + (d.titulo ? " · " + d.titulo : "");
+    $("lalertas").innerHTML = d.alertas.map((a) => `<li class="${a.nivel}">${a.nivel === "alto" ? "🚩" : a.nivel === "medio" ? "⚠️" : "ℹ️"} ${esc(a.texto)}</li>`).join("");
+    $("lconsejo").textContent = d.consejo;
+    $("res-link").classList.remove("oculto"); $("mlink").textContent = "";
+  } catch (e) { $("mlink").textContent = "⚠️ " + e.message; }
+  $("revisarlink").disabled = false;
+};
+
+async function historial() {
+  $("hres").textContent = "Cargando…";
+  try {
+    const d = await api("pagos", { dias: 30 });
+    const s = d.por_semaforo || {};
+    $("hres").textContent = `${d.revisados} revisados · 🔴 ${s.rojo || 0} · 🟡 ${s.amarillo || 0} · 🟢 ${s.verde || 0}` + (d.dinero_que_se_salvo ? ` · Te salvaste de $${d.dinero_que_se_salvo}` : "");
+    $("hlista").innerHTML = d.ultimos.map((x) => `<div class="hist"><div>${x.semaforo === "rojo" ? "🔴" : x.semaforo === "amarillo" ? "🟡" : "🟢"}</div><div><b>${x.monto ? "$" + x.monto : "—"}</b> ${esc(x.de || "")}<br><small style="color:var(--suave)">${x.cuando} · ${esc(x.resultado)}</small></div></div>`).join("") || '<div class="msg">Todavía no hay revisiones.</div>';
+  } catch (e) { $("hres").textContent = "⚠️ " + e.message; }
+}
+if (clave) abrir();
+</script>
+</body>
+</html>
