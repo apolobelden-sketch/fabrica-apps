@@ -188,7 +188,7 @@ $("archivo").onchange = async () => {
 $("guardar").onclick = async () => {
   const key = $("key").value.replace(/\s/g, ""), secret = $("secret").value.replace(/\s/g, "");
   if (!key || !secret) return ($("mguardar").textContent = "Faltan las 2 llaves.");
-  $("guardar").disabled = true; $("mguardar").textContent = "Guardando y probando con Hugging Face…";
+  $("guardar").disabled = true; $("mguardar").textContent = "Probando con Hugging Face… si alguna letra salió mal, la corrijo sola (puede tardar hasta 1 minuto).";
   try {
     const d = await api("llaves_hf", { key, secret });
     $("final").classList.remove("oculto");
