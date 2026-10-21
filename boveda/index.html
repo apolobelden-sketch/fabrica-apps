@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bóveda de Llaves</title>
+<meta name="theme-color" content="#1e1b4b">
+<style>
+  :root { --fondo:#f1f5f9; --tarjeta:#fff; --texto:#0f172a; --suave:#64748b; --borde:#e2e8f0; --acento:#4338ca; --ok:#16a34a; --mal:#dc2626; --esp:#d97706; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#0b1120; --tarjeta:#111827; --texto:#e5e7eb; --suave:#94a3b8; --borde:#1f2937; --acento:#818cf8; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); color:var(--texto); }
+  header { background:linear-gradient(135deg,#1e1b4b,#4338ca); color:#fff; padding:18px 16px 20px; }
+  header h1 { margin:0; font-size:22px; } header p { margin:4px 0 0; opacity:.88; font-size:14px; }
+  main { max-width:640px; margin:0 auto; padding:14px 16px 60px; }
+  .t { background:var(--tarjeta); border:1px solid var(--borde); border-radius:14px; padding:14px; margin-bottom:14px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  input[type=password], textarea { width:100%; padding:11px 12px; border:1px solid var(--borde); border-radius:10px; background:var(--fondo); color:var(--texto); font:inherit; }
+  textarea { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:14px; }
+  button { font-family:inherit; }
+  .grande { width:100%; border:0; border-radius:12px; padding:13px; background:var(--acento); color:#fff; font-weight:700; font-size:16px; margin-top:10px; }
+  .sec { width:100%; border:1px solid var(--acento); border-radius:12px; padding:11px; background:transparent; color:var(--acento); font-weight:700; font-size:15px; margin-top:10px; }
+  button:disabled { opacity:.5; }
+  .msg { font-size:14px; color:var(--suave); margin-top:8px; }
+  .llave { border:1px solid var(--borde); border-radius:12px; padding:12px; margin-top:10px; }
+  .llave .cab { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .llave b { font-size:15px; }
+  .chip { font-size:12px; font-weight:700; padding:3px 9px; border-radius:20px; color:#fff; white-space:nowrap; }
+  .c-ok { background:var(--ok); } .c-error { background:var(--mal); } .c-pendiente { background:var(--esp); } .c-sin_probar, .c-nueva { background:var(--suave); }
+  .llave p { margin:8px 0 0; font-size:14px; }
+  .llave small { color:var(--suave); display:block; margin-top:6px; }
+  .acciones { display:flex; gap:8px; margin-top:10px; }
+  .acciones button { flex:1; border:1px solid var(--borde); background:var(--fondo); color:var(--texto); border-radius:10px; padding:9px; font-weight:600; font-size:14px; }
+  .aviso { background:#eef2ff; color:#312e81; border-radius:10px; padding:10px 12px; font-size:14px; }
+  @media (prefers-color-scheme: dark) { .aviso { background:#1e1b4b; color:#c7d2fe; } }
+  .barra { height:8px; background:var(--borde); border-radius:6px; overflow:hidden; margin-top:8px; }
+  .barra i { display:block; height:100%; width:0; background:var(--acento); transition:width .3s; }
+  details { margin-top:6px; } summary { cursor:pointer; color:var(--acento); font-weight:600; font-size:14px; }
+  ul.donde { padding-left:18px; margin:8px 0 0; font-size:14px; } ul.donde li { margin-bottom:6px; }
+  .oculto { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔐 Bóveda de Llaves</h1>
+  <p>Pega o fotografía tus llaves de API: las reconozco, las pruebo, te digo qué pasa y las conecto.</p>
+</header>
+<main>
+  <section class="t" id="candado">
+    <h2>🔒 Código de acceso</h2>
+    <input type="password" id="cod" placeholder="Tu código" autocomplete="current-password">
+    <button class="grande" id="entrar">Entrar</button>
+    <div class="msg" id="mcand"></div>
+  </section>
+
+  <div id="app" class="oculto">
+    <section class="t">
+      <h2>➕ Agregar llaves</h2>
+      <div class="aviso">💡 Truco: en la pantalla donde aparece la llave, <b>mantén presionado el texto → Seleccionar todo → Copiar</b>. Así se copian todas las llaves juntas de una sola vez, aunque sean 2 o 3.</div>
+      <button class="grande" id="pegar">📋 Pegar lo que copié</button>
+      <textarea id="texto" rows="4" placeholder="…o mantén presionado aquí y elige Pegar" style="margin-top:10px" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      <button class="sec" id="foto">📷 Mejor leer una captura de pantalla</button>
+      <input type="file" id="archivo" accept="image/*" class="oculto">
+      <div class="barra oculto" id="barra"><i id="progreso"></i></div>
+      <div class="msg" id="mtexto"></div>
+      <div id="encontradas"></div>
+      <button class="grande oculto" id="guardar">Probar y guardar</button>
+      <div class="msg" id="mguardar"></div>
+      <div id="resultados"></div>
+      <details><summary>¿Dónde saco cada llave?</summary><ul class="donde" id="donde"></ul></details>
+    </section>
+
+    <section class="t">
+      <h2>🗝️ Mis llaves</h2>
+      <div class="msg" style="margin-top:0">Nunca se muestran completas: solo sus últimos 4 caracteres.</div>
+      <div id="lista"></div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const API = "https://pnjglzuxsyahxcbgjwvq.supabase.co/functions/v1/boveda";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let clave = "", desde = "pegado", tDet;
+try { clave = localStorage.getItem("boveda_clave") || localStorage.getItem("nube_clave") || ""; } catch {}
+const ETQ = { ok: "✅ Funciona", error: "❌ No funciona", pendiente: "⏳ Esperando", sin_probar: "Sin probar", nueva: "Encontrada" };
+
+async function api(accion, cuerpo) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json", "x-fabrica-clave": clave }, body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json().catch(() => ({ error: "Respuesta inválida" }));
+  if (r.status === 401) { $("app").classList.add("oculto"); $("candado").classList.remove("oculto"); throw new Error("Código incorrecto"); }
+  if (!r.ok || d.error) throw new Error(d.error || "Error " + r.status);
+  return d;
+}
+$("entrar").onclick = async () => {
+  clave = $("cod").value.trim().toLowerCase(); $("mcand").textContent = "Revisando…";
+  try { await api("estado"); try { localStorage.setItem("boveda_clave", clave); } catch {} abrir(); } catch (e) { $("mcand").textContent = "⚠️ " + e.message; }
+};
+function abrir() { $("candado").classList.add("oculto"); $("app").classList.remove("oculto"); cargar(); }
+
+const hora = (iso) => iso ? new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }) : "";
+async function cargar() {
+  try {
+    const d = await api("estado");
+    $("donde").innerHTML = d.servicios.map((s) => `<li><b>${esc(s.nombre)}:</b> ${esc(s.como)}</li>`).join("");
+    $("lista").innerHTML = d.llaves.length ? d.llaves.map((k) => `
+      <div class="llave"><div class="cab"><b>${esc(k.nombre)}</b><span class="chip c-${k.estado}">${ETQ[k.estado] || k.estado}</span></div>
+      <p>${esc(k.detalle || "")}</p>
+      <small>Termina en ${esc(k.ultimos4)} · probada ${k.probado ? new Date(k.probado).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "—"}${k.estado === "pendiente" && k.proximo_intento ? ` · siguiente intento automático ${hora(k.proximo_intento)}` : ""}</small>
+      <div class="acciones"><button data-p="${k.servicio}">🔄 Probar otra vez</button><button data-q="${k.servicio}">🗑️ Quitar</button></div></div>`).join("") : '<div class="msg">Todavía no hay llaves guardadas.</div>';
+    $("lista").querySelectorAll("[data-p]").forEach((b) => b.onclick = async () => { b.disabled = true; b.textContent = "Probando…"; try { await api("probar", { servicio: b.dataset.p }); } catch (e) { alert(e.message); } cargar(); });
+    $("lista").querySelectorAll("[data-q]").forEach((b) => b.onclick = async () => { if (!confirm("¿Quitar esta llave de la bóveda?")) return; try { await api("quitar", { servicio: b.dataset.q }); } catch (e) { alert(e.message); } cargar(); });
+  } catch (e) { $("lista").innerHTML = `<div class="msg">⚠️ ${esc(e.message)}</div>`; }
+}
+
+// Revisa lo pegado (sin guardar): qué servicios encontré y si el formato cuadra
+async function revisar() {
+  const t = $("texto").value;
+  $("resultados").innerHTML = "";
+  if (t.trim().length < 10) { $("encontradas").innerHTML = ""; $("guardar").classList.add("oculto"); $("mtexto").textContent = ""; return; }
+  try {
+    const d = await api("detectar", { texto: t });
+    if (!d.encontradas.length) { $("encontradas").innerHTML = ""; $("guardar").classList.add("oculto"); $("mtexto").textContent = "No reconozco ninguna llave ahí. Revisa que se haya copiado completa."; return; }
+    $("mtexto").textContent = `Encontré ${d.encontradas.length} llave${d.encontradas.length > 1 ? "s" : ""}:`;
+    $("encontradas").innerHTML = d.encontradas.map((k) => `<div class="llave"><div class="cab"><b>${esc(k.nombre)}</b><span class="chip ${k.problema ? "c-error" : "c-ok"}">${k.problema ? "Revisar" : "Forma correcta"}</span></div>
+      <small>${Object.entries(k.campos).map(([n, c]) => `${n}: ${c.largo} caracteres, termina en ${esc(c.ultimos4)}`).join(" · ")}</small>${k.problema ? `<p>⚠️ ${esc(k.problema)}</p>` : ""}</div>`).join("");
+    $("guardar").classList.remove("oculto");
+  } catch (e) { $("mtexto").textContent = "⚠️ " + e.message; }
+}
+$("texto").oninput = () => { desde = "pegado"; clearTimeout(tDet); tDet = setTimeout(revisar, 500); };
+$("pegar").onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); if (!t) throw 0; $("texto").value = t; desde = "pegado"; revisar(); }
+  catch { $("mtexto").textContent = "Mantén presionado el cuadro de abajo y elige Pegar."; $("texto").focus(); }
+};
+
+// Captura: se lee AQUÍ en el celular (no se sube la imagen)
+async function preparar(file) {
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = URL.createObjectURL(file); });
+  const k = Math.min(2.2, 2600 / img.width), c = document.createElement("canvas");
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  const g = c.getContext("2d"); g.drawImage(img, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  let s = 0; for (let i = 0; i < p.length; i += 4) s += p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114;
+  const oscuro = s / (p.length / 4) < 128;
+  for (let i = 0; i < p.length; i += 4) { let y = p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114; if (oscuro) y = 255 - y; const v = y > 165 ? 255 : y < 110 ? 0 : (y - 110) * 255 / 55; p[i] = p[i + 1] = p[i + 2] = v; }
+  g.putImageData(d, 0, 0); return c;
+}
+$("foto").onclick = () => $("archivo").click();
+$("archivo").onchange = async () => {
+  const f = $("archivo").files[0]; if (!f) return;
+  $("barra").classList.remove("oculto"); $("progreso").style.width = "5%";
+  $("mtexto").textContent = "Leyendo la captura en tu celular… (la primera vez tarda un poco más)";
+  try {
+    if (!window.Tesseract) throw new Error("No cargó el lector. Revisa tu internet y recarga.");
+    const r = await Tesseract.recognize(await preparar(f), "eng", { logger: (m) => { if (m.status === "recognizing text") $("progreso").style.width = Math.max(10, Math.round(m.progress * 100)) + "%"; } });
+    // el lector mete espacios dentro de las llaves: se quitan por renglón
+    $("texto").value = (r.data.text || "").split("\n").map((l) => l.replace(/\s+/g, "")).filter(Boolean).join("\n");
+    desde = "foto"; $("progreso").style.width = "100%";
+    await revisar();
+    $("mtexto").textContent += " (leídas de la captura: si una letra salió mal, al probar la corrijo sola)";
+  } catch (e) { $("mtexto").textContent = "⚠️ " + e.message; }
+};
+
+$("guardar").onclick = async () => {
+  $("guardar").disabled = true; $("mguardar").textContent = "Probando cada llave con su servicio… (puede tardar hasta 1 minuto)";
+  try {
+    const d = await api("guardar", { texto: $("texto").value, desde });
+    $("resultados").innerHTML = d.resultados.map((k) => `<div class="llave"><div class="cab"><b>${esc(k.nombre)}</b><span class="chip c-${k.estado}">${ETQ[k.estado] || k.estado}</span></div><p>${esc(k.detalle)}</p>${k.conectada ? `<p>🔌 ${esc(k.conectada)}</p>` : ""}${k.estado === "pendiente" && k.reintento ? `<small>No hagas nada: la vuelvo a probar sola a las ${hora(k.reintento)} y así cada 5 minutos.</small>` : ""}</div>`).join("");
+    $("mguardar").textContent = d.resultados.some((k) => k.estado === "ok") ? "✅ Listo. Ya puedes borrar la captura de tu galería." : "";
+    $("texto").value = ""; $("encontradas").innerHTML = ""; $("guardar").classList.add("oculto"); $("mtexto").textContent = "";
+    cargar();
+  } catch (e) { $("mguardar").textContent = "⚠️ " + e.message; }
+  $("guardar").disabled = false;
+};
+if (clave) abrir();
+</script>
+</body>
+</html>
