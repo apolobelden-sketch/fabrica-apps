@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi tarjeta de sellos</title>
+<meta name="description" content="Tu tarjeta de cliente frecuente: junta sellos y gana premios.">
+<style>
+:root{--bg:#f7f3ee;--card:#fff;--tx:#231d17;--sub:#6e655b;--line:#e6ddd2;--ac:#c2410c;--ac2:#fdeee4;--ok:#0f7a5c;--ok2:#e6f4ee;--bad:#b3261e;--oro:#b7791f;--oro2:#fdf3dc}
+@media (prefers-color-scheme:dark){:root{--bg:#16130f;--card:#211c17;--tx:#f1ebe4;--sub:#a99d90;--line:#352d25;--ac:#fb923c;--ac2:#3a2416;--ok:#4ade80;--ok2:#15291f;--bad:#ff8a80;--oro:#fbbf24;--oro2:#352a10}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:520px;margin:0 auto;padding:0 16px 48px}
+header{padding:22px 0 6px;text-align:center}
+h1{margin:0;font-size:1.4rem}
+.sub{color:var(--sub);margin:4px 0 0}
+.caja{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:var(--bg);color:var(--tx)}
+.prim{width:100%;margin-top:16px;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:700;font-size:1.05rem;background:var(--ac);color:#fff;cursor:pointer}
+.prim:disabled{opacity:.5}
+.sellos{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0 6px}
+.s{aspect-ratio:1;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;font-size:1.4rem;color:var(--sub)}
+.s.lleno{border:0;background:var(--ac);color:#fff;font-size:1.3rem}
+.s.nuevo{animation:pop .6s ease}
+.s.regalo{border-color:var(--oro);color:var(--oro)}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.s.nuevo{animation:none}}
+.cuenta{text-align:center;font-weight:700;font-size:1.05rem;margin:4px 0 0}
+.premio-txt{text-align:center;color:var(--sub);margin:2px 0 0}
+.msj{border-radius:14px;padding:14px;margin:14px 0;text-align:center;font-weight:600}
+.msj.ok{background:var(--ok2);color:var(--ok)}
+.msj.info{background:var(--ac2)}
+.msj.mal{background:var(--ac2);color:var(--bad)}
+.vale{background:var(--oro2);border:2px solid var(--oro);border-radius:18px;padding:18px;margin:14px 0;text-align:center}
+.vale .cod{font-size:2.2rem;font-weight:800;letter-spacing:.18em;font-family:ui-monospace,Menlo,monospace;margin:6px 0}
+.estrellas{display:flex;justify-content:center;gap:6px;margin:8px 0}
+.estrellas button{border:0;background:none;font-size:2.1rem;cursor:pointer;color:var(--line);padding:2px;min-width:44px;min-height:44px}
+.estrellas button.on{color:var(--oro)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;border-radius:12px;padding:13px;margin-top:10px;font-weight:700;text-decoration:none;border:1px solid var(--line);color:var(--tx);background:var(--card);font:inherit;cursor:pointer}
+.link{background:none;border:0;color:var(--sub);text-decoration:underline;font:inherit;cursor:pointer;display:block;margin:16px auto 0;font-size:.9rem}
+.error{color:var(--bad);font-weight:600;margin-top:10px}
+footer{color:var(--sub);font-size:.8rem;text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="env">
+  <header><h1 id="titulo">🎟️ Tarjeta de sellos</h1><p class="sub" id="sub">Cargando…</p></header>
+  <p id="errorGeneral" class="error" hidden></p>
+
+  <form id="registro" class="caja" hidden>
+    <b id="regTitulo">Tu tarjeta está en tu WhatsApp</b>
+    <p class="sub">Solo pon tu número una vez. No hay que descargar nada.</p>
+    <label for="nombre">Tu nombre</label>
+    <input id="nombre" autocomplete="given-name" maxlength="60" required>
+    <label for="tel">Tu WhatsApp (10 dígitos)</label>
+    <input id="tel" type="tel" inputmode="numeric" autocomplete="tel" maxlength="14" required>
+    <button class="prim" id="btnReg" type="submit">Ver mi tarjeta</button>
+    <p id="errorReg" class="error" hidden></p>
+  </form>
+
+  <div id="tarjeta" hidden>
+    <div id="mensaje" class="msj" hidden></div>
+    <div id="vales"></div>
+    <div class="caja">
+      <div class="sellos" id="sellos"></div>
+      <p class="cuenta" id="cuenta"></p>
+      <p class="premio-txt" id="premioTxt"></p>
+    </div>
+    <div class="msj info" id="comoSellar">📷 En tu próxima compra, escanea el QR que está en la caja para ganar tu sello.</div>
+
+    <div class="caja" id="opinion" hidden>
+      <b>¿Cómo te atendimos hoy?</b>
+      <div class="estrellas" id="estrellas" role="group" aria-label="Calificación"></div>
+      <textarea id="comentario" rows="2" maxlength="400" placeholder="Cuéntanos (opcional)" hidden></textarea>
+      <button class="prim" id="enviarOp" hidden>Enviar</button>
+      <p id="graciasOp" class="sub" style="text-align:center" hidden></p>
+      <a class="btn" id="irResena" target="_blank" rel="noopener" hidden>⭐ Dejar reseña en Google</a>
+    </div>
+    <button class="link" id="cambiar" type="button">¿No eres tú? Cambiar número</button>
+  </div>
+  <footer>Tarjeta digital · Fábrica de Apps</footer>
+</div>
+<script>
+const API = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/lealtad";
+const qs = new URLSearchParams(location.search);
+const slug = (qs.get("a") || "").replace(/[^a-z0-9-]/g, "");
+let codigo = (qs.get("c") || "").replace(/[^a-f0-9]/gi, "").slice(0, 8);
+const $ = (id) => document.getElementById(id);
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const K = `lealtad_${slug}`;
+let yo = (() => { try { return JSON.parse(ls.get(K) || "null"); } catch (e) { return null; } })();
+let info = null, estrellas = 0;
+// Se quita el código de la barra para que no se reuse al recargar o compartir
+if (codigo) history.replaceState(null, "", `${location.pathname}?a=${slug}`);
+
+async function api(accion, cuerpo) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug, ...cuerpo }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || d.error) { const e = new Error(d.error || "No se pudo conectar. Revisa tu internet."); e.datos = d; throw e; }
+  return d;
+}
+function aviso(texto, tipo) { $("mensaje").textContent = texto; $("mensaje").className = `msj ${tipo}`; $("mensaje").hidden = false; }
+function pintar(sellos, meta, nuevo) {
+  $("sellos").innerHTML = "";
+  for (let i = 1; i <= meta; i++) {
+    const s = document.createElement("div");
+    s.className = "s" + (i <= sellos ? " lleno" : "") + (nuevo && i === sellos ? " nuevo" : "") + (i === meta && i > sellos ? " regalo" : "");
+    s.textContent = i <= sellos ? "✓" : (i === meta ? "🎁" : i);
+    $("sellos").appendChild(s);
+  }
+  const faltan = meta - sellos;
+  $("cuenta").textContent = sellos === 0 ? `Tarjeta nueva · ${meta} sellos para tu premio` : `${sellos} de ${meta} sellos · ${faltan === 1 ? "¡te falta 1!" : `te faltan ${faltan}`}`;
+  $("premioTxt").textContent = `Premio: ${info.premio}`;
+}
+function vales(lista) {
+  $("vales").innerHTML = "";
+  (lista || []).forEach((p) => {
+    const v = document.createElement("div"); v.className = "vale";
+    v.innerHTML = `<b>🎁 ¡Tienes un premio!</b><div class="sub"></div><div class="cod"></div><div class="sub">Enséñale este código al negocio para cobrarlo.</div>`;
+    v.children[1].textContent = p.premio; v.children[2].textContent = p.codigo;
+    $("vales").appendChild(v);
+  });
+}
+async function verTarjeta() {
+  const d = await api("tarjeta", { telefono: yo.tel });
+  pintar(d.cliente ? d.cliente.sellos : 0, d.sellos_meta, false);
+  vales(d.premios_por_cobrar);
+  $("tarjeta").hidden = false;
+  return d;
+}
+async function sellar() {
+  const c = codigo; codigo = "";
+  try {
+    const d = await api("sellar", { telefono: yo.tel, nombre: yo.nombre, codigo: c });
+    if (d.ya_sellado) {
+      aviso(`Ya tienes tu sello de hoy 👍 El siguiente lo puedes ganar desde el ${d.proximo}.`, "info");
+      await verTarjeta();
+      return;
+    }
+    if (d.gano) aviso(`🎉 ¡Completaste tu tarjeta! Ganaste: ${d.gano.premio}`, "ok");
+    else aviso(`✅ ¡Sello agregado! Llevas ${d.sellos} de ${d.meta}.`, "ok");
+    const t = await api("tarjeta", { telefono: yo.tel });
+    pintar(d.gano ? d.meta : d.sellos, d.meta, true);
+    if (d.gano) setTimeout(() => pintar(0, d.meta, false), 2200);
+    vales(t.premios_por_cobrar);
+    $("tarjeta").hidden = false;
+    $("comoSellar").hidden = true;
+    mostrarOpinion();
+  } catch (e) {
+    aviso(e.datos && e.datos.codigo_vencido ? "⏱️ Ese QR ya cambió. Vuelve a escanear el que está en la caja ahorita." : e.message, "mal");
+    await verTarjeta().catch(() => {});
+  }
+}
+function mostrarOpinion() {
+  $("opinion").hidden = false;
+  $("estrellas").innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = "★"; b.setAttribute("aria-label", `${i} estrella${i > 1 ? "s" : ""}`);
+    b.onclick = () => { estrellas = i; [...$("estrellas").children].forEach((x, j) => x.classList.toggle("on", j < i)); $("comentario").hidden = false; $("enviarOp").hidden = false; };
+    $("estrellas").appendChild(b);
+  }
+}
+$("enviarOp").onclick = async () => {
+  $("enviarOp").disabled = true;
+  try {
+    const d = await api("opinar", { telefono: yo.tel, calificacion: estrellas, comentario: $("comentario").value.trim() });
+    $("estrellas").hidden = true; $("comentario").hidden = true; $("enviarOp").hidden = true;
+    $("graciasOp").textContent = d.gracias || "¡Gracias!"; $("graciasOp").hidden = false;
+    if (d.resena_url) { $("irResena").href = d.resena_url; $("irResena").hidden = false; }
+  } catch (e) { $("graciasOp").textContent = e.message; $("graciasOp").hidden = false; $("enviarOp").disabled = false; }
+};
+$("registro").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const tel = $("tel").value.replace(/\D/g, "").slice(-10), nombre = $("nombre").value.trim();
+  if (tel.length !== 10) { $("errorReg").textContent = "Escribe tu WhatsApp de 10 dígitos."; $("errorReg").hidden = false; return; }
+  yo = { tel, nombre }; ls.set(K, JSON.stringify(yo));
+  $("registro").hidden = true;
+  if (codigo) await sellar(); else await verTarjeta().catch((e) => aviso(e.message, "mal"));
+});
+$("cambiar").onclick = () => { ls.del(K); yo = null; $("tarjeta").hidden = true; $("mensaje").hidden = true; $("opinion").hidden = true; $("tel").value = ""; $("registro").hidden = false; };
+
+async function iniciar() {
+  if (!slug) { $("sub").textContent = ""; $("errorGeneral").textContent = "Este enlace no es válido."; $("errorGeneral").hidden = false; return; }
+  try {
+    info = await api("info", {});
+    document.title = `Tarjeta de ${info.negocio}`;
+    $("titulo").textContent = `🎟️ ${info.negocio}`;
+    $("sub").textContent = info.mensaje || `Junta ${info.sellos_meta} sellos y gana: ${info.premio}`;
+    if (!info.activo) { $("errorGeneral").textContent = "La tarjeta de este negocio está en pausa por ahora."; $("errorGeneral").hidden = false; return; }
+    if (codigo) $("regTitulo").textContent = "¡Ya casi! Pon tus datos para recibir tu sello";
+    if (!yo) { $("registro").hidden = false; return; }
+    if (codigo) await sellar(); else await verTarjeta();
+  } catch (e) { $("sub").textContent = ""; $("errorGeneral").textContent = e.message; $("errorGeneral").hidden = false; }
+}
+iniciar();
+</script>
+</body>
+</html>

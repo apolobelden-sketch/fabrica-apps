@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Tarjeta de lealtad</title>
+<style>
+:root{--bg:#f7f3ee;--card:#fff;--tx:#231d17;--sub:#6e655b;--line:#e6ddd2;--ac:#c2410c;--ac2:#fdeee4;--ok:#0f7a5c;--ok2:#e6f4ee;--bad:#b3261e;--bad2:#fde8e7;--oro:#b7791f;--oro2:#fdf3dc}
+@media (prefers-color-scheme:dark){:root{--bg:#16130f;--card:#211c17;--tx:#f1ebe4;--sub:#a99d90;--line:#352d25;--ac:#fb923c;--ac2:#3a2416;--ok:#4ade80;--ok2:#15291f;--bad:#ff8a80;--bad2:#3b1515;--oro:#fbbf24;--oro2:#352a10}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:720px;margin:0 auto;padding:0 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0 6px;flex-wrap:wrap}
+h1{margin:0;font-size:1.3rem}
+.sub{color:var(--sub);font-size:.9rem;margin:2px 0 0}
+button,.btn{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px}
+.prim{background:var(--ac);color:#fff}
+.wa{background:#1f9d55;color:#fff}
+.tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.tabs button[aria-pressed="true"]{background:var(--ac);color:#fff}
+.tarjetas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.t{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.t b{display:block;font-size:1.35rem}
+.t span{color:var(--sub);font-size:.8rem}
+.caja{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.caja input,.caja textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--tx);margin:6px 0}
+label{font-weight:600;display:block;margin-top:10px}
+.qrbox{display:flex;flex-direction:column;align-items:center;text-align:center}
+#qr{background:#fff;padding:12px;border-radius:14px;margin:10px 0;width:264px;height:264px}
+#qr img,#qr canvas{width:240px!important;height:240px!important}
+.barra{height:6px;background:var(--line);border-radius:6px;width:240px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--ac);transition:width 1s linear}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.dos{grid-template-columns:1fr}}
+.res{border-radius:10px;padding:10px 12px;margin-top:8px;font-weight:600}
+.res.ok{background:var(--ok2);color:var(--ok)}
+.res.mal{background:var(--bad2);color:var(--bad)}
+.res.info{background:var(--ac2)}
+.cli{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.cli .n{font-weight:700}
+.cli .d{color:var(--sub);font-size:.85rem}
+.mini{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;max-width:150px}
+.mini i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.mini i.on{background:var(--ac)}
+.op{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.op .e{color:var(--oro);letter-spacing:2px}
+.op.baja{border-left:5px solid var(--bad)}
+.enlace{word-break:break-all;font-size:.85rem;background:var(--bg);border-radius:8px;padding:8px;margin:8px 0}
+.acc{display:flex;gap:6px;flex-wrap:wrap}
+.error{color:var(--bad);font-weight:600}
+.ok{color:var(--ok);font-weight:600}
+.vacio{text-align:center;color:var(--sub);padding:26px 10px}
+</style>
+</head>
+<body>
+<div class="env">
+  <header>
+    <div><h1 id="titulo">🎟️ Tarjeta de lealtad</h1><p class="sub" id="subtitulo">Sellos digitales para tus clientes frecuentes</p></div>
+    <button id="actualizar" hidden aria-label="Actualizar">🔄</button>
+  </header>
+  <p id="error" class="error" hidden></p>
+
+  <div id="acceso" class="caja" hidden>
+    <b>Escribe tu código de acceso</b>
+    <p class="sub">Si eres el dueño del negocio, abre esta página con el enlace que te mandaron.</p>
+    <input id="codigo" type="password" autocomplete="current-password">
+    <button class="prim" id="entrar">Entrar</button>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="tarjetas">
+      <div class="t"><b id="nClientes">0</b><span>clientes</span></div>
+      <div class="t"><b id="nActivos">0</b><span>activos (30 días)</span></div>
+      <div class="t"><b id="nEstrellas">–</b><span>estrellas</span></div>
+    </div>
+    <div class="tabs">
+      <button data-v="caja" aria-pressed="true">🧾 Caja</button>
+      <button data-v="clientes" aria-pressed="false">👥 Clientes</button>
+      <button data-v="opiniones" aria-pressed="false">⭐ Opiniones</button>
+      <button data-v="ajustes" aria-pressed="false">⚙️ Ajustes</button>
+    </div>
+
+    <div id="v-caja">
+      <div class="caja qrbox">
+        <b>Que el cliente escanee este QR para su sello</b>
+        <div id="qr" aria-label="Código QR para sellar"></div>
+        <div class="barra"><i id="barra" style="width:100%"></i></div>
+        <p class="sub" id="vence">Cambia cada minuto para que nadie haga trampa.</p>
+        <p class="sub" id="pausa" hidden>⚠️ La tarjeta está en pausa. Actívala en Ajustes.</p>
+      </div>
+      <div class="dos">
+        <div class="caja">
+          <b>Sellar con su número</b>
+          <p class="sub">Si el cliente no puede escanear.</p>
+          <input id="sTel" type="tel" inputmode="numeric" maxlength="14" placeholder="WhatsApp 10 dígitos" aria-label="WhatsApp del cliente">
+          <input id="sNom" maxlength="60" placeholder="Nombre (opcional)" aria-label="Nombre del cliente">
+          <button class="prim" id="sellar" style="width:100%">✅ Poner sello</button>
+          <div id="sRes" class="res" hidden></div>
+        </div>
+        <div class="caja">
+          <b>Cobrar un premio</b>
+          <p class="sub">Escribe el código que te enseña el cliente.</p>
+          <input id="cCod" maxlength="6" placeholder="Ej. 6375C4" autocapitalize="characters" aria-label="Código del premio" style="text-transform:uppercase;letter-spacing:.15em;font-weight:700">
+          <button class="prim" id="canjear" style="width:100%">🎁 Cobrar premio</button>
+          <div id="cRes" class="res" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="v-clientes" hidden><div id="lClientes"></div></div>
+    <div id="v-opiniones" hidden><div id="lOpiniones"></div></div>
+
+    <div id="v-ajustes" hidden>
+      <div class="caja">
+        <b>🔗 Enlace de la tarjeta para tus clientes</b>
+        <p class="sub">Aquí ven sus sellos y sus premios. Ponlo en tu Facebook o mándalo por WhatsApp.</p>
+        <div class="enlace" id="enlaceCliente"></div>
+        <div class="acc"><button id="copiar">📋 Copiar</button><a class="btn wa" id="compartir" target="_blank" rel="noopener">💬 Compartir por WhatsApp</a></div>
+      </div>
+      <div class="caja">
+        <b>Cómo funciona tu tarjeta</b>
+        <label><input type="checkbox" id="activo" style="width:auto"> Tarjeta activa</label>
+        <label for="meta">¿Cuántos sellos para el premio? (3 a 30)</label>
+        <input id="meta" type="number" min="3" max="30">
+        <label for="premio">¿Qué se ganan?</label>
+        <input id="premio" maxlength="80" placeholder="Ej. Un café gratis">
+        <label for="horas">Horas mínimas entre un sello y otro del mismo cliente</label>
+        <input id="horas" type="number" min="1" max="168">
+        <label for="mensaje">Mensaje para tus clientes (opcional)</label>
+        <input id="mensaje" maxlength="160" placeholder="Ej. Junta 10 sellos y llévate un corte gratis">
+        <label for="resena">Enlace de tus reseñas en Google (opcional)</label>
+        <input id="resena" type="url" maxlength="300" placeholder="https://g.page/r/...">
+        <p class="sub">Cuando un cliente te califica con 4 o 5 estrellas, le sale el botón para dejarte reseña en Google. Si te pone 1 o 2, te llega aviso a ti.</p>
+        <button class="prim" id="guardar" style="margin-top:12px">Guardar ajustes</button>
+        <span id="guardado" class="ok"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/lealtad";
+const PAG = "https://apolobelden-sketch.github.io/fabrica-apps/";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const slug = (new URLSearchParams(location.search).get("a") || "").replace(/[^a-z0-9-]/g, "");
+const claveNegocio = (location.hash.match(/k=([a-f0-9]{16,64})/) || [])[1] || "";
+let claveFabrica = ls.get("fabrica_clave") || "";
+let vista = "caja", qr = null, timer = null, tic = null, cfg = null, candado = null;
+
+function headers() { const h = { "Content-Type": "application/json" }; if (claveNegocio) h["x-pedidos-clave"] = claveNegocio; else if (claveFabrica) h["x-fabrica-clave"] = claveFabrica; return h; }
+async function llamar(accion, cuerpo) {
+  const r = await fetch(`${FN}?accion=${accion}`, { method: "POST", headers: headers(), body: JSON.stringify({ slug, ...(cuerpo || {}) }) });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) { if (!claveNegocio) { claveFabrica = ""; ls.del("fabrica_clave"); $("acceso").hidden = false; $("panel").hidden = true; } parar(); throw new Error(claveNegocio ? "Este enlace ya no es válido. Pide uno nuevo a quien te hizo la app." : "Código incorrecto."); }
+  if (!r.ok || d.error) throw new Error(d.error || "No se pudo conectar. Revisa tu internet.");
+  return d;
+}
+function err(m) { $("error").textContent = m; $("error").hidden = !m; }
+function res(id, texto, tipo) { $(id).textContent = texto; $(id).className = `res ${tipo}`; $(id).hidden = false; }
+function parar() { clearTimeout(timer); clearInterval(tic); timer = tic = null; }
+
+// ---------- QR que cambia cada minuto ----------
+async function refrescarQR() {
+  clearTimeout(timer); clearInterval(tic);
+  try {
+    const d = await llamar("codigo_caja");
+    err("");
+    $("pausa").hidden = d.activo !== false;
+    if (window.QRCode) {
+      if (!qr) qr = new QRCode($("qr"), { text: d.url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+      else { qr.clear(); qr.makeCode(d.url); }
+    } else { $("qr").innerHTML = `<img alt="Código QR" width="240" height="240" src="https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=0&data=${encodeURIComponent(d.url)}">`; }
+    let quedan = d.vence_en_seg;
+    const pinta = () => { $("barra").style.width = `${Math.max(0, quedan / 60 * 100)}%`; $("vence").textContent = `Cambia en ${quedan} s · así nadie hace trampa`; quedan--; };
+    pinta(); tic = setInterval(pinta, 1000);
+    if (vista === "caja" && !document.hidden) timer = setTimeout(refrescarQR, (d.vence_en_seg + 1) * 1000);
+  } catch (e) { err(e.message); if (vista === "caja" && !document.hidden && !$("panel").hidden) timer = setTimeout(refrescarQR, 15000); }
+}
+// La pantalla no se apaga mientras el QR está a la vista (si el celular lo permite)
+async function pantallaPrendida() { try { if (navigator.wakeLock && !candado) { candado = await navigator.wakeLock.request("screen"); candado.addEventListener("release", () => { candado = null; }); } } catch (e) {} }
+document.addEventListener("visibilitychange", () => { if (document.hidden) parar(); else if (vista === "caja" && !$("panel").hidden) { refrescarQR(); pantallaPrendida(); } });
+
+// ---------- Datos ----------
+async function cargar() {
+  if (!slug) { err("Falta el negocio en el enlace."); return; }
+  try {
+    const [c, o, a] = await Promise.all([llamar("clientes"), llamar("opiniones"), llamar("config")]);
+    cfg = a.config;
+    $("acceso").hidden = true; $("panel").hidden = false; $("actualizar").hidden = false; err("");
+    $("titulo").textContent = `🎟️ ${c.negocio}`;
+    $("subtitulo").textContent = `${cfg.sellos_meta} sellos = ${cfg.premio}`;
+    $("nClientes").textContent = c.total; $("nActivos").textContent = c.activos_30_dias; $("nEstrellas").textContent = o.promedio ?? "–";
+    pintarClientes(c); pintarOpiniones(o); pintarAjustes();
+    if (vista === "caja") { refrescarQR(); pantallaPrendida(); }
+  } catch (e) { err(e.message); }
+}
+function hace(f) {
+  if (!f) return "sin sellos";
+  const m = Math.round((Date.now() - Date.parse(f)) / 60000);
+  if (m < 60) return `hace ${m} min`; if (m < 1440) return `hace ${Math.round(m / 60)} h`;
+  return `hace ${Math.round(m / 1440)} días`;
+}
+function pintarClientes(c) {
+  if (!c.clientes.length) { $("lClientes").innerHTML = '<p class="vacio">Todavía no hay clientes. Pon el QR en la caja y empieza a sellar.</p>'; return; }
+  $("lClientes").innerHTML = c.clientes.map((x) => {
+    const tel = String(x.telefono || "");
+    const puntos = Array.from({ length: c.meta }, (_, i) => `<i class="${i < x.sellos ? "on" : ""}"></i>`).join("");
+    return `<div class="cli"><div><div class="n">${esc(x.nombre || "Sin nombre")}</div><div class="d">${x.sellos}/${c.meta} · ${x.total_sellos} visitas · ${x.premios} premio${x.premios === 1 ? "" : "s"} · ${hace(x.ultimo_sello)}</div>
+      <a class="d" href="https://wa.me/52${esc(tel)}" target="_blank" rel="noopener">💬 ${esc(tel)}</a></div><div class="mini" aria-label="${x.sellos} de ${c.meta} sellos">${puntos}</div></div>`;
+  }).join("");
+}
+function pintarOpiniones(o) {
+  if (!o.opiniones.length) { $("lOpiniones").innerHTML = '<p class="vacio">Aún no hay opiniones. Les sale la opción a tus clientes después de cada sello.</p>'; return; }
+  $("lOpiniones").innerHTML = `<p class="sub">${o.total} opiniones · promedio ${o.promedio} ⭐</p>` + o.opiniones.map((x) =>
+    `<div class="op ${x.estrellas <= 2 ? "baja" : ""}"><span class="e">${"★".repeat(x.estrellas)}${"☆".repeat(5 - x.estrellas)}</span> <b>${esc(x.cliente || "Cliente")}</b>
+     <span class="sub">· ${new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}</span>${x.comentario ? `<div>${esc(x.comentario)}</div>` : ""}</div>`).join("");
+}
+function pintarAjustes() {
+  const enlace = `${PAG}tarjeta.html?a=${slug}`;
+  $("enlaceCliente").textContent = enlace;
+  $("compartir").href = "https://wa.me/?text=" + encodeURIComponent(`Mi tarjeta de cliente frecuente: ${enlace}`);
+  $("activo").checked = cfg.activo; $("meta").value = cfg.sellos_meta; $("premio").value = cfg.premio || "";
+  $("horas").value = cfg.horas_entre_sellos; $("mensaje").value = cfg.mensaje || ""; $("resena").value = cfg.resena_url || "";
+}
+
+// ---------- Acciones ----------
+$("sellar").onclick = async (ev, forzar) => {
+  const tel = $("sTel").value.replace(/\D/g, "");
+  if (tel.length < 10) { res("sRes", "El WhatsApp debe tener 10 dígitos.", "mal"); return; }
+  $("sellar").disabled = true;
+  try {
+    const d = await llamar("sellar_caja", { telefono: tel, nombre: $("sNom").value.trim(), forzar: !!forzar });
+    if (d.ya_sellado) {
+      res("sRes", `Ya tiene su sello de hoy (${d.sellos}/${d.meta}). El siguiente: ${d.proximo}.`, "info");
+      const b = document.createElement("button"); b.textContent = "Sellar de todos modos"; b.style.marginTop = "8px"; b.onclick = () => $("sellar").onclick(null, true);
+      $("sRes").appendChild(document.createElement("br")); $("sRes").appendChild(b);
+    } else if (d.gano) res("sRes", `🎉 ¡Completó su tarjeta! Ganó: ${d.gano.premio}. Código: ${d.gano.codigo}`, "ok");
+    else res("sRes", `✅ Sello puesto: ${d.sellos} de ${d.meta}.`, "ok");
+    if (!d.ya_sellado) { $("sTel").value = ""; $("sNom").value = ""; }
+  } catch (e) { res("sRes", e.message, "mal"); }
+  $("sellar").disabled = false;
+};
+$("canjear").onclick = async () => {
+  const codigo = $("cCod").value.trim().toUpperCase();
+  if (!/^[0-9A-F]{6}$/.test(codigo)) { res("cRes", "El código tiene 6 letras y números (ej. 6375C4).", "mal"); return; }
+  $("canjear").disabled = true;
+  try { const d = await llamar("canjear", { codigo }); res("cRes", `✅ Premio cobrado: ${d.premio}. Ya no se puede volver a usar.`, "ok"); $("cCod").value = ""; }
+  catch (e) { res("cRes", e.message, "mal"); }
+  $("canjear").disabled = false;
+};
+$("guardar").onclick = async () => {
+  $("guardado").textContent = "Guardando…";
+  try {
+    const d = await llamar("config", { activo: $("activo").checked, sellos_meta: Number($("meta").value), premio: $("premio").value, horas_entre_sellos: Number($("horas").value), mensaje: $("mensaje").value, resena_url: $("resena").value });
+    cfg = d.config; pintarAjustes(); $("subtitulo").textContent = `${cfg.sellos_meta} sellos = ${cfg.premio}`;
+    $("guardado").textContent = " ✓ Guardado";
+    if ($("resena").value.trim() && !cfg.resena_url) $("guardado").textContent = " ✓ Guardado (el enlace de reseñas debe empezar con https://)";
+  } catch (e) { $("guardado").textContent = ""; err(e.message); }
+};
+$("copiar").onclick = async () => { try { await navigator.clipboard.writeText($("enlaceCliente").textContent); $("copiar").textContent = "✓ Copiado"; } catch (e) { $("copiar").textContent = "Mantén presionado el enlace"; } };
+document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+  vista = b.dataset.v;
+  document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  ["caja", "clientes", "opiniones", "ajustes"].forEach((v) => { $(`v-${v}`).hidden = v !== vista; });
+  if (vista === "caja") { refrescarQR(); pantallaPrendida(); } else parar();
+});
+$("actualizar").onclick = cargar;
+$("entrar").onclick = () => { claveFabrica = $("codigo").value.trim().toLowerCase(); ls.set("fabrica_clave", claveFabrica); cargar(); };
+$("codigo").addEventListener("keydown", (e) => { if (e.key === "Enter") $("entrar").click(); });
+if (claveNegocio || claveFabrica) cargar();
+else $("acceso").hidden = false;
+</script>
+</body>
+</html>
