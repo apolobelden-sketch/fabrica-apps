@@ -70,6 +70,19 @@
       <details><summary>¿Dónde saco cada llave?</summary><ul class="donde" id="donde"></ul></details>
     </section>
 
+    <section class="t" id="secCloud">
+      <h2>☁️ Cloudinary (3 datos)</h2>
+      <div class="aviso">En <b>console.cloudinary.com → Settings (engrane) → API Keys</b> copia cada dato y pégalo en su casilla.</div>
+      <label for="cCloud" style="display:block;font-weight:600;margin-top:10px">1. Cloud name <small>(el nombre de tu cuenta)</small></label>
+      <input type="text" id="cCloud" placeholder="ej. dxyz123ab" spellcheck="false" autocapitalize="off" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--borde);border-radius:10px;background:var(--fondo);color:var(--texto);font:inherit">
+      <label for="cKey" style="display:block;font-weight:600;margin-top:10px">2. API Key <small>(puros números)</small></label>
+      <input type="text" id="cKey" inputmode="numeric" placeholder="ej. 123456789012345" spellcheck="false" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--borde);border-radius:10px;background:var(--fondo);color:var(--texto);font:inherit">
+      <label for="cSecret" style="display:block;font-weight:600;margin-top:10px">3. API Secret <small>(letras y números; tócale el ojito en Cloudinary para verlo)</small></label>
+      <input type="password" id="cSecret" placeholder="Pega aquí el API Secret" spellcheck="false" autocapitalize="off" autocomplete="off">
+      <button class="grande" id="cGuardar" style="margin-top:12px">Probar y guardar Cloudinary</button>
+      <div class="msg" id="mCloud"></div>
+    </section>
+
     <section class="t">
       <h2>🗝️ Mis llaves</h2>
       <div class="msg" style="margin-top:0">Nunca se muestran completas: solo sus últimos 4 caracteres.</div>
@@ -172,6 +185,30 @@ $("guardar").onclick = async () => {
     cargar();
   } catch (e) { $("mguardar").textContent = "⚠️ " + e.message; }
   $("guardar").disabled = false;
+};
+// ---------- Cloudinary con 3 casillas ----------
+function leerUrlCloud() {
+  // Si pegan el cloudinary://KEY:SECRET@NOMBRE en cualquier casilla, se reparte solo
+  for (const id of ["cCloud", "cKey", "cSecret"]) {
+    const m = $(id).value.match(/cloudinary:\/\/([^:@\s]*):([^@\s]*)@([a-z0-9_-]+)/i);
+    if (m) { $(id).value = ""; $("cCloud").value = m[3]; if (/^\d+$/.test(m[1])) $("cKey").value = m[1]; if (/^[A-Za-z0-9_-]{15,}$/.test(m[2])) $("cSecret").value = m[2]; }
+  }
+}
+["cCloud", "cKey", "cSecret"].forEach((id) => $(id).addEventListener("input", leerUrlCloud));
+$("cGuardar").onclick = async () => {
+  const cloud = $("cCloud").value.trim(), key = $("cKey").value.replace(/\s/g, ""), secret = $("cSecret").value.trim();
+  if (!/^[a-z0-9_-]+$/i.test(cloud)) { $("mCloud").textContent = "⚠️ Falta el Cloud name (solo letras, números y guiones)."; return; }
+  if (!/^\d{10,20}$/.test(key)) { $("mCloud").textContent = "⚠️ El API Key son puros números (unos 15). Revisa que no sea el Secret."; return; }
+  if (/^\d+$/.test(secret) || !/^[A-Za-z0-9_-]{15,40}$/.test(secret)) { $("mCloud").textContent = /^\d+$/.test(secret) ? "⚠️ En el API Secret pegaste puros números: ese es el API Key. El Secret trae letras y números, está en la columna de al lado (tócale el ojito)." : "⚠️ El API Secret no se ve completo. Cópialo otra vez (letras y números, unos 27)."; return; }
+  $("cGuardar").disabled = true; $("mCloud").textContent = "Probando con Cloudinary…";
+  try {
+    const d = await api("guardar", { llaves: [{ servicio: "cloudinary", campos: { cloud, key, secret } }], desde: "pegado" });
+    const k = d.resultados[0] || {};
+    $("mCloud").textContent = k.estado === "ok" ? "✅ ¡Listo! Cloudinary quedó conectado." : `${ETQ[k.estado] || k.estado}: ${k.detalle || ""}`;
+    if (k.estado === "ok") { $("cCloud").value = ""; $("cKey").value = ""; $("cSecret").value = ""; }
+    cargar();
+  } catch (e) { $("mCloud").textContent = "⚠️ " + e.message; }
+  $("cGuardar").disabled = false;
 };
 if (clave) abrir();
 </script>
