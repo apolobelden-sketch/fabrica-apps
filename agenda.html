@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Agenda de citas</title>
+<style>
+:root{--bg:#f5f6f2;--card:#fff;--tx:#1d2420;--sub:#66706a;--line:#dfe3dd;--ac:#0f7a5c;--ac2:#e9f4ef;--warn:#a16207;--warn2:#fef3c7;--bad:#b3261e;--bad2:#fde8e7;--mor:#7c3aed;--mor2:#f1eafe}
+@media (prefers-color-scheme:dark){:root{--bg:#121614;--card:#1b201d;--tx:#e8ece9;--sub:#9aa59f;--line:#2c3430;--ac:#3fbf93;--ac2:#1f2d27;--warn:#fcd34d;--warn2:#3a2f12;--bad:#ff8a80;--bad2:#3b1515;--mor:#a78bfa;--mor2:#2a2238}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:720px;margin:0 auto;padding:0 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0 6px;flex-wrap:wrap}
+h1{margin:0;font-size:1.3rem}
+.sub{color:var(--sub);font-size:.9rem;margin:2px 0 0}
+button,.btn{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.prim{background:var(--ac);color:#fff}
+.tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.tabs button[aria-pressed="true"]{background:var(--ac);color:#fff}
+.tarjetas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.t{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.t b{display:block;font-size:1.35rem}
+.t span{color:var(--sub);font-size:.8rem}
+.dia{font-weight:800;margin:18px 0 8px;text-transform:capitalize}
+.cita{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;border-left:5px solid var(--mor)}
+.cita.confirmada{border-left-color:var(--ac)}
+.cita.cancelada,.cita.no_vino{opacity:.6;border-left-color:var(--bad)}
+.cita.asistio{opacity:.75;border-left-color:var(--line)}
+.cab{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.hora{font-weight:800;font-size:1.15rem}
+.etq{font-size:.75rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--mor2);color:var(--mor)}
+.etq.confirmada{background:var(--ac2);color:var(--ac)}
+.etq.cancelada,.etq.no_vino{background:var(--bad2);color:var(--bad)}
+.etq.asistio{background:var(--line);color:var(--sub)}
+.det{color:var(--sub);font-size:.92rem;margin:4px 0 8px}
+.acc{display:flex;gap:6px;flex-wrap:wrap}
+.acc button{font-size:.88rem;padding:8px 10px;min-height:38px}
+.wa{background:#1f9d55;color:#fff}
+.caja{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.caja input,.caja textarea,.caja select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--tx);margin:6px 0}
+label{font-weight:600;display:block;margin-top:10px}
+.fila{display:grid;grid-template-columns:100px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;margin:4px 0}
+.fila input[type=time]{min-width:0;padding:9px 6px}
+.fila input[type=time]{margin:0}
+.fila label{margin:0;font-weight:500;display:flex;gap:6px;align-items:center}
+.enlace{word-break:break-all;font-size:.85rem;background:var(--bg);border-radius:8px;padding:8px;margin:8px 0}
+.error{color:var(--bad);font-weight:600}
+.ok{color:var(--ac);font-weight:600}
+.vacio{text-align:center;color:var(--sub);padding:26px 10px}
+.qr{display:block;margin:10px auto;width:180px;height:180px;background:#fff;border-radius:10px;padding:6px}
+</style>
+</head>
+<body>
+<div class="env">
+  <header>
+    <div><h1 id="titulo">📅 Agenda de citas</h1><p class="sub" id="subtitulo">Las citas que tus clientes apartan en línea</p></div>
+    <div style="display:flex;gap:8px"><a class="btn" id="irPedidos" hidden>📋 Pedidos</a><button id="actualizar" hidden>🔄</button></div>
+  </header>
+  <p id="error" class="error" hidden></p>
+
+  <div id="acceso" class="caja" hidden>
+    <b>Escribe tu código de acceso</b>
+    <p class="sub">Si eres el dueño del negocio, abre esta página con el enlace que te mandaron.</p>
+    <input id="codigo" type="password" autocomplete="current-password">
+    <button class="prim" id="entrar">Entrar</button>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="tarjetas">
+      <div class="t"><b id="nHoy">0</b><span>hoy</span></div>
+      <div class="t"><b id="nManana">0</b><span>mañana</span></div>
+      <div class="t"><b id="nSemana">0</b><span>próximos días</span></div>
+    </div>
+    <div class="tabs">
+      <button data-v="hoy" aria-pressed="true">Hoy</button>
+      <button data-v="manana" aria-pressed="false">Mañana</button>
+      <button data-v="todas" aria-pressed="false">Próximas</button>
+      <button data-v="ajustes" aria-pressed="false">⚙️ Ajustes</button>
+    </div>
+    <div id="lista"></div>
+
+    <div id="ajustes" hidden>
+      <div class="caja">
+        <b>🔗 Enlace para tus clientes</b>
+        <p class="sub">Compártelo o pégalo en tu app, Facebook o WhatsApp. Ahí apartan su cita solos.</p>
+        <div class="enlace" id="enlaceCliente"></div>
+        <div class="acc"><button id="copiar">📋 Copiar</button><a class="btn wa" id="compartir" target="_blank" rel="noopener">💬 Compartir por WhatsApp</a></div>
+        <img class="qr" id="qr" alt="Código QR para apartar cita">
+      </div>
+      <div class="caja">
+        <b>Ajustes de la agenda</b>
+        <label><input type="checkbox" id="activo" style="width:auto"> Recibir citas en línea</label>
+        <label for="wa">WhatsApp del negocio (10 dígitos)</label>
+        <input id="wa" type="tel" inputmode="numeric" maxlength="14">
+        <label for="dur">Duración de cada cita (minutos)</label>
+        <input id="dur" type="number" min="10" max="240" step="5">
+        <label for="adelante">¿Con cuántos días de anticipación pueden apartar?</label>
+        <input id="adelante" type="number" min="1" max="60">
+        <label for="servicios">Servicios (uno por renglón, precio opcional: <i>Corte - $150</i>)</label>
+        <textarea id="servicios" rows="4"></textarea>
+        <label for="aviso">Aviso para clientes (opcional)</label>
+        <input id="aviso" maxlength="200" placeholder="Ej. Llega 5 minutos antes · Tolerancia 10 min">
+        <label>Horario por día</label>
+        <div id="horario"></div>
+        <button class="prim" id="guardar" style="margin-top:12px">Guardar ajustes</button>
+        <span id="guardado" class="ok"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/citas";
+const PAG = "https://apolobelden-sketch.github.io/fabrica-apps/";
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const slug = (new URLSearchParams(location.search).get("a") || "").replace(/[^a-z0-9-]/g, "");
+const claveNegocio = (location.hash.match(/k=([a-f0-9]{16,64})/) || [])[1] || "";
+let claveFabrica = ls.get("fabrica_clave") || "";
+let datos = null, vista = "hoy";
+const ESTADO = { apartada: "Apartada", confirmada: "Confirmada", cancelada: "Cancelada", asistio: "Llegó", no_vino: "No vino" };
+
+function headers() { const h = { "Content-Type": "application/json" }; if (claveNegocio) h["x-pedidos-clave"] = claveNegocio; else if (claveFabrica) h["x-fabrica-clave"] = claveFabrica; return h; }
+async function llamar(accion, cuerpo) {
+  const r = await fetch(`${FN}?accion=${accion}`, { method: "POST", headers: headers(), body: JSON.stringify({ slug, ...(cuerpo || {}) }) });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) { if (!claveNegocio) { claveFabrica = ""; ls.del("fabrica_clave"); $("acceso").hidden = false; $("panel").hidden = true; } throw new Error(claveNegocio ? "Este enlace ya no es válido. Pide uno nuevo a quien te hizo la app." : "Código incorrecto."); }
+  if (!r.ok || d.error) throw new Error(d.error || "Error " + r.status);
+  return d;
+}
+function error(m) { $("error").textContent = m || ""; $("error").hidden = !m; }
+const sumar = (f, n) => new Date(Date.parse(f + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+
+async function cargar() {
+  error("");
+  try {
+    datos = await llamar("lista", { dias: 30 });
+    $("panel").hidden = false; $("acceso").hidden = true; $("actualizar").hidden = false;
+    $("titulo").textContent = "📅 " + datos.negocio;
+    document.title = "Agenda · " + datos.negocio;
+    if (claveNegocio) { $("irPedidos").href = `${PAG}pedidos.html?a=${slug}#k=${claveNegocio}`; $("irPedidos").hidden = false; }
+    const act = datos.citas.filter((c) => ["apartada", "confirmada"].includes(c.estado));
+    $("nHoy").textContent = act.filter((c) => c.fecha === datos.hoy).length;
+    $("nManana").textContent = act.filter((c) => c.fecha === sumar(datos.hoy, 1)).length;
+    $("nSemana").textContent = act.filter((c) => c.fecha >= datos.hoy).length;
+    pintar(); llenarAjustes();
+  } catch (e) { error(e.message); }
+}
+function pintar() {
+  $("ajustes").hidden = vista !== "ajustes"; $("lista").hidden = vista === "ajustes";
+  if (vista === "ajustes") return;
+  const man = sumar(datos.hoy, 1);
+  let l = datos.citas.filter((c) => c.fecha >= datos.hoy);
+  if (vista === "hoy") l = l.filter((c) => c.fecha === datos.hoy);
+  if (vista === "manana") l = l.filter((c) => c.fecha === man);
+  if (!l.length) { $("lista").innerHTML = `<p class="vacio">${vista === "todas" ? "No hay citas próximas." : "No hay citas " + (vista === "hoy" ? "hoy" : "mañana") + "."}<br>Comparte tu enlace en ⚙️ Ajustes para recibir más.</p>`; return; }
+  let html = "", diaActual = "";
+  for (const c of l) {
+    if (c.fecha !== diaActual) { diaActual = c.fecha; html += `<div class="dia">${c.fecha === datos.hoy ? "Hoy" : c.fecha === man ? "Mañana" : esc(c.fecha_texto)}</div>`; }
+    const vivo = ["apartada", "confirmada"].includes(c.estado);
+    html += `<div class="cita ${c.estado}"><div class="cab"><span class="hora">${esc(c.hora_texto)}</span><span class="etq ${c.estado}">${ESTADO[c.estado]}${c.recordada && vivo ? " · recordada" : ""}</span></div>
+      <div><b>${esc(c.nombre)}</b>${c.servicio ? " · " + esc(c.servicio) : ""}</div>
+      <div class="det">📱 ${esc(c.telefono)}${c.nota ? "<br>📝 " + esc(c.nota) : ""}</div>
+      <div class="acc">${vivo ? `<button class="wa" data-r="${c.id}">📲 Recordar</button>${c.estado === "apartada" ? `<button data-e="confirmada" data-id="${c.id}">✅ Confirmó</button>` : ""}<button data-e="asistio" data-id="${c.id}">✔️ Llegó</button><button data-e="no_vino" data-id="${c.id}">🚫 No vino</button><button data-e="cancelada" data-id="${c.id}">✖️ Cancelar</button>` : `<button data-e="apartada" data-id="${c.id}">↩️ Reactivar</button>`}</div></div>`;
+  }
+  $("lista").innerHTML = html;
+}
+$("lista").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  try {
+    if (b.dataset.r) { const w = window.open("", "_blank"); const d = await llamar("recordar", { id: Number(b.dataset.r) }); if (w) w.location = d.whatsapp; else location.href = d.whatsapp; }
+    else if (b.dataset.e) { if (b.dataset.e === "cancelada" && !confirm("¿Cancelar esta cita? La hora vuelve a quedar libre.")) return; await llamar("estado", { id: Number(b.dataset.id), estado: b.dataset.e }); }
+    await cargar();
+  } catch (e) { error(e.message); }
+});
+document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => { document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); vista = b.dataset.v; pintar(); });
+
+function llenarAjustes() {
+  const c = datos.config || {};
+  const enlace = `${PAG}cita.html?a=${slug}`;
+  $("enlaceCliente").textContent = enlace;
+  $("compartir").href = "https://wa.me/?text=" + encodeURIComponent(`📅 Aparta tu cita en ${datos.negocio} aquí, en un minuto: ${enlace}`);
+  $("qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=10&data=" + encodeURIComponent(enlace);
+  $("activo").checked = c.activo !== false; $("wa").value = c.whatsapp || ""; $("dur").value = c.duracion_min || 30; $("adelante").value = c.dias_adelante || 14;
+  $("aviso").value = c.aviso || ""; $("servicios").value = (c.servicios || []).map((s) => s.precio ? `${s.nombre} - ${s.precio}` : s.nombre).join("\n");
+  $("horario").innerHTML = [1, 2, 3, 4, 5, 6, 0].map((d) => { const r = (c.horario || {})[d]; return `<div class="fila"><label><input type="checkbox" data-d="${d}" ${r ? "checked" : ""} style="width:auto">${DIAS[d]}</label><input type="time" data-ini="${d}" value="${r ? r[0] : "09:00"}"><input type="time" data-fin="${d}" value="${r ? r[1] : "18:00"}"></div>`; }).join("");
+}
+$("guardar").onclick = async () => {
+  $("guardado").textContent = "";
+  const horario = {};
+  for (let d = 0; d <= 6; d++) horario[d] = document.querySelector(`[data-d="${d}"]`).checked ? [document.querySelector(`[data-ini="${d}"]`).value, document.querySelector(`[data-fin="${d}"]`).value] : null;
+  const servicios = $("servicios").value.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const [n, p] = l.split(/\s+-\s+/); return { nombre: n, precio: p || null }; });
+  try {
+    await llamar("config", { activo: $("activo").checked, whatsapp: $("wa").value, duracion_min: Number($("dur").value), dias_adelante: Number($("adelante").value), aviso: $("aviso").value, servicios, horario });
+    $("guardado").textContent = " ✓ Guardado"; await cargar(); vista = "ajustes"; pintar();
+  } catch (e) { error(e.message); }
+};
+$("copiar").onclick = async () => { try { await navigator.clipboard.writeText($("enlaceCliente").textContent); $("copiar").textContent = "✓ Copiado"; } catch (e) { $("copiar").textContent = "Mantén presionado el enlace para copiar"; } };
+$("actualizar").onclick = cargar;
+$("entrar").onclick = () => { claveFabrica = $("codigo").value.trim().toLowerCase(); ls.set("fabrica_clave", claveFabrica); cargar(); };
+
+if (!slug) error("Falta el negocio en el enlace.");
+else if (!claveNegocio && !claveFabrica) $("acceso").hidden = false;
+else cargar();
+</script>
+</body>
+</html>
