@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi negocio</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--sub:#5f6873;--line:#e1e4e8;--ac:#2563eb;--ac2:#e8effd;--ok:#0f7a5c;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--card:#1b1e23;--tx:#eceff3;--sub:#9aa3ad;--line:#2b3037;--ac:#7aa2ff;--ac2:#1d2638;--ok:#4ade80;--bad:#ff8a80}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:620px;margin:0 auto;padding:0 16px 48px}
+header{padding:22px 0 6px}
+h1{margin:0;font-size:1.4rem}
+h2{font-size:1rem;margin:22px 0 8px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em}
+.sub{color:var(--sub);margin:4px 0 0;font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.fila{display:flex;align-items:center;gap:12px}
+.ico{font-size:1.6rem;width:44px;height:44px;border-radius:12px;background:var(--ac2);display:grid;place-items:center;flex:0 0 auto}
+.fila b{display:block}
+.fila .d{color:var(--sub);font-size:.88rem}
+.acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.btn{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:600;cursor:pointer;background:var(--ac2);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.btn.prim{background:var(--ac);color:#fff}
+.btn.wa{background:#1f9d55;color:#fff}
+.panel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel a{display:flex;flex-direction:column;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-decoration:none;color:var(--tx);min-height:92px}
+.panel a span{font-size:1.6rem}
+.panel a small{color:var(--sub)}
+.qr{display:flex;flex-direction:column;align-items:center;margin-top:10px}
+.qr .lienzo{background:#fff;padding:10px;border-radius:12px}
+.aviso{background:var(--ac2);border-radius:12px;padding:12px;font-size:.92rem;margin-top:16px}
+.error{color:var(--bad);font-weight:600}
+</style>
+</head>
+<body>
+<div class="env">
+  <header><h1 id="titulo">🏪 Mi negocio</h1><p class="sub">Tu centro de control. Guárdalo en favoritos o en la pantalla de inicio: es solo para ti.</p></header>
+  <p id="error" class="error" hidden></p>
+
+  <div id="todo" hidden>
+    <h2>Lo que ven tus clientes</h2>
+    <div id="publicos"></div>
+
+    <h2>Tus paneles</h2>
+    <div class="panel" id="paneles"></div>
+
+    <div class="aviso">💡 Imprime los QR y pégalos en tu mostrador o espejo. Comparte los enlaces en tu Facebook, Instagram y estados de WhatsApp.</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const PAG = "https://apolobelden-sketch.github.io/fabrica-apps/";
+const FN = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const slug = (new URLSearchParams(location.search).get("a") || "").replace(/[^a-z0-9-]/g, "");
+const h = new URLSearchParams(location.hash.slice(1));
+const k = (h.get("k") || "").replace(/[^a-f0-9]/g, "");
+const r = (h.get("r") || "").replace(/[^a-z0-9-]/g, ""), rk = (h.get("rk") || "").replace(/[^a-f0-9]/g, "");
+
+async function info(fn) {
+  try { const x = await fetch(`${FN}${fn}?accion=info`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }) }); return x.ok ? await x.json() : null; }
+  catch (e) { return null; }
+}
+function tarjeta(ico, titulo, desc, url, msj) {
+  const d = document.createElement("div"); d.className = "card";
+  d.innerHTML = `<div class="fila"><div class="ico">${ico}</div><div><b>${esc(titulo)}</b><div class="d">${esc(desc)}</div></div></div>
+    <div class="acc"><a class="btn prim" target="_blank" rel="noopener">Abrir</a><a class="btn wa" target="_blank" rel="noopener">💬 Compartir</a><button class="btn" type="button">🔳 QR</button><button class="btn" type="button">📋 Copiar</button></div>
+    <div class="qr" hidden><div class="lienzo"></div><a class="btn" style="margin-top:8px" download="qr-${esc(slug)}.png">⬇️ Descargar QR</a></div>`;
+  const [abrir, wa, bqr, copiar] = d.querySelectorAll(".acc > *");
+  abrir.href = url;
+  wa.href = "https://wa.me/?text=" + encodeURIComponent(`${msj} ${url}`);
+  const caja = d.querySelector(".qr"), lienzo = d.querySelector(".lienzo"), bajar = caja.querySelector("a");
+  bqr.onclick = () => {
+    caja.hidden = !caja.hidden;
+    if (!caja.hidden && !lienzo.firstChild) {
+      if (window.QRCode) {
+        new QRCode(lienzo, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+        setTimeout(() => { const c = lienzo.querySelector("canvas"); if (c) bajar.href = c.toDataURL("image/png"); }, 150);
+      } else {
+        const src = "https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=10&data=" + encodeURIComponent(url);
+        lienzo.innerHTML = `<img src="${src}" width="220" height="220" alt="QR">`; bajar.href = src;
+      }
+    }
+  };
+  copiar.onclick = async () => { try { await navigator.clipboard.writeText(url); copiar.textContent = "✓ Copiado"; } catch (e) { copiar.textContent = "Mantén presionado Abrir"; } };
+  $("publicos").appendChild(d);
+}
+function boton(ico, titulo, desc, url) {
+  const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener";
+  a.innerHTML = `<span>${ico}</span><b>${esc(titulo)}</b><small>${esc(desc)}</small>`;
+  $("paneles").appendChild(a);
+}
+
+(async () => {
+  if (!slug || !k) { $("error").textContent = "Este enlace está incompleto. Pide el tuyo a quien te hizo la app."; $("error").hidden = false; return; }
+  const [c, l] = await Promise.all([info("citas"), info("lealtad")]);
+  const nombre = (l && l.negocio) || (c && c.negocio) || "Mi negocio";
+  document.title = nombre; $("titulo").textContent = `🏪 ${nombre}`;
+  tarjeta("📱", "Tu página", "Tus servicios, precios y botón de WhatsApp", `${PAG}ver.html?a=${slug}`, `Mira nuestros servicios y precios de ${nombre}:`);
+  const conCitas = c && !c.error && Array.isArray(c.dias) && c.dias.length;
+  if (conCitas) tarjeta("📅", "Apartar cita", "Tus clientes apartan solos, sin llamarte", `${PAG}cita.html?a=${slug}`, `Aparta tu cita en ${nombre} aquí:`);
+  if (l && l.activo !== false) tarjeta("🎟️", "Tarjeta de cliente frecuente", `${l.sellos_meta || 10} sellos = ${l.premio || "premio"}`, `${PAG}tarjeta.html?a=${slug}`, `Junta sellos en ${nombre} y gana premios:`);
+  boton("📋", "Pedidos", "Lo que te piden por la app", `${PAG}pedidos.html?a=${slug}#k=${k}`);
+  boton("📅", "Agenda", conCitas ? "Tus citas de hoy y mañana" : "Activa las citas en línea", `${PAG}agenda.html?a=${slug}#k=${k}`);
+  boton("🧾", "Caja de sellos", "QR para sellar y cobrar premios", `${PAG}lealtad.html?a=${slug}#k=${k}`);
+  if (r && rk) boton("🏪", "Plaza Emprende", "Publica productos y ofertas", `${PAG}red.html#panel=${r}&k=${rk}`);
+  $("todo").hidden = false;
+})();
+</script>
+</body>
+</html>
