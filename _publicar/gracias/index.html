@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gracias por tu compra · Ediciones Guizar</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,#ff8a00,#6a1b9a);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2a2230;padding:16px}
+.c{background:#fff;border-radius:22px;max-width:460px;width:100%;padding:26px 22px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+h1{margin:6px 0 6px;font-size:1.5rem;color:#4a148c}
+p{margin:6px 0;color:#5a5060}
+.emo{font-size:3rem;line-height:1}
+.btn{display:block;margin:16px 0 6px;padding:14px;border-radius:999px;background:#e65100;color:#fff;font-weight:800;text-decoration:none;font-size:1.05rem}
+.sec{background:#fff;color:#4a148c;border:2px solid #4a148c}
+small{display:block;color:#8a8090;margin-top:10px}
+.spin{width:36px;height:36px;border:4px solid #eadfd3;border-top-color:#e65100;border-radius:50%;margin:10px auto;animation:g 1s linear infinite}
+@keyframes g{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="c" id="c"><div class="spin"></div><p>Verificando tu pago…</p></div>
+<script>
+const FN = "https://pnjglzuxsyahxcbgjwvq.supabase.co/functions/v1/mp-libro";
+const q = new URLSearchParams(location.search);
+const pid = q.get("payment_id") || q.get("collection_id") || "";
+const libro = q.get("libro") || q.get("external_reference") || "dia-de-muertos";
+const caja = document.getElementById("c");
+const pintar = (h) => (caja.innerHTML = h);
+const correo = "jairoventas555@gmail.com";
+const ayuda = `<small>¿Algún problema? Escríbenos a <a href="mailto:${correo}?subject=Pago%20${encodeURIComponent(pid)}">${correo}</a> con tu número de pago: <b>${pid || "—"}</b></small>`;
+
+async function revisar(intento = 0) {
+  if (!pid) {
+    pintar(`<div class="emo">🔎</div><h1>Recupera tu compra</h1>
+      <p>Escribe el <b>número de operación</b> que viene en el correo de Mercado Pago (también aparece en tu app de Mercado Pago, en el detalle del pago).</p>
+      <form id="f" style="margin-top:12px">
+        <input id="n" inputmode="numeric" placeholder="Ej. 123456789012" required
+          style="width:100%;padding:13px;border:2px solid #d8cfe0;border-radius:12px;font-size:1.05rem;text-align:center">
+        <button class="btn" style="width:100%;border:0;cursor:pointer">Buscar mi compra</button>
+      </form>${ayuda}`);
+    document.getElementById("f").onsubmit = (e) => {
+      e.preventDefault();
+      const n = document.getElementById("n").value.replace(/\D/g, "");
+      if (n) location.search = `?payment_id=${n}`;
+    };
+    return;
+  }
+  try {
+    const r = await fetch(`${FN}?accion=descargar&payment_id=${encodeURIComponent(pid)}`);
+    const d = await r.json();
+    if (d.estado === "approved" && d.url) {
+      const varios = Array.isArray(d.archivos) && d.archivos.length > 1;
+      const botones = varios
+        ? d.archivos.map((a) => `<a class="btn" href="${a.url}" style="margin-bottom:10px">⬇️ ${a.titulo} (PDF)</a>`).join("")
+        : `<a class="btn" href="${d.url}">⬇️ Descargar mi libro (PDF)</a>`;
+      pintar(`<div class="emo">🎉</div><h1>¡Gracias por tu compra!</h1><p>${varios ? "Tu paquete" : "Tu libro"} <b>${d.titulo}</b> está listo.${varios ? " Descarga cada PDF con su botón:" : ""}</p>
+        ${botones}
+        <p style="font-size:.9rem">Guarda esta página: puedes volver a abrirla para descargarlo otra vez.</p>${ayuda}`);
+    } else if (d.estado === "pending" || d.estado === "in_process") {
+      pintar(`<div class="emo">⏳</div><h1>Tu pago está en proceso</h1><p>Si pagaste en OXXO o por transferencia, Mercado Pago tarda un poco en aprobarlo.</p>
+        <p><b>Guarda esta página</b> y vuelve a abrirla cuando recibas el correo de pago aprobado: aquí aparecerá tu descarga.</p>
+        <a class="btn sec" href="${location.href}">🔄 Revisar otra vez</a>${ayuda}`);
+    } else if (d.estado === "rejected" || d.estado === "cancelled") {
+      pintar(`<div class="emo">😕</div><h1>El pago no se completó</h1><p>No se hizo ningún cargo. Puedes intentarlo de nuevo.</p>
+        <a class="btn" href="${FN}?accion=comprar&libro=${encodeURIComponent(libro)}">Intentar de nuevo</a>${ayuda}`);
+    } else if (d.estado === "limite") {
+      pintar(`<div class="emo">📘</div><h1>Ya descargaste tu libro</h1><p>Llegaste al límite de descargas. Escríbenos y te lo mandamos.</p>${ayuda}`);
+    } else if (intento < 3) {
+      setTimeout(() => revisar(intento + 1), 3000);
+    } else {
+      pintar(`<div class="emo">⏳</div><h1>Estamos confirmando tu pago</h1><p>Vuelve a abrir esta página en unos minutos.</p><a class="btn sec" href="${location.href}">🔄 Revisar otra vez</a>${ayuda}`);
+    }
+  } catch (e) {
+    if (intento < 3) setTimeout(() => revisar(intento + 1), 3000);
+    else pintar(`<div class="emo">📶</div><h1>Sin conexión</h1><p>Revisa tu internet y vuelve a abrir esta página.</p>${ayuda}`);
+  }
+}
+revisar();
+</script>
+</body>
+</html>
