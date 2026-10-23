@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pagar mensualidad</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--sub:#5f6873;--line:#e1e4e8;--ac:#2563eb;--ok:#0f7a5c;--ok2:#e6f4ee;--warn:#a16207;--warn2:#fef3c7;--bad:#b3261e;--bad2:#fde8e7;--mp:#009ee3}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--card:#1b1e23;--tx:#eceff3;--sub:#9aa3ad;--line:#2b3037;--ac:#7aa2ff;--ok:#4ade80;--ok2:#15291f;--warn:#fcd34d;--warn2:#3a2f12;--bad:#ff8a80;--bad2:#3b1515}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.env{max-width:520px;margin:0 auto;padding:0 16px 48px}
+header{padding:24px 0 6px;text-align:center}
+h1{margin:0;font-size:1.35rem}
+.sub{color:var(--sub);margin:4px 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0}
+.monto{font-size:2.4rem;font-weight:800;text-align:center;margin:4px 0}
+.estado{text-align:center;border-radius:12px;padding:10px;font-weight:600;margin-top:8px}
+.estado.ok{background:var(--ok2);color:var(--ok)}
+.estado.warn{background:var(--warn2);color:var(--warn)}
+.estado.bad{background:var(--bad2);color:var(--bad)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:700;font-size:1.02rem;cursor:pointer;text-decoration:none;margin-top:10px}
+.mp{background:var(--mp);color:#fff}
+.wa{background:#1f9d55;color:#fff}
+.sec{background:var(--bg);color:var(--tx);border:1px solid var(--line)}
+.btn:disabled{opacity:.6}
+.dato{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.dato:last-of-type{border:0}
+.dato span{color:var(--sub)}
+.dato b{word-break:break-all;text-align:right}
+.nota{color:var(--sub);font-size:.88rem;margin-top:10px}
+.error{color:var(--bad);font-weight:600;text-align:center}
+.aviso{border-radius:14px;padding:14px;margin:14px 0;text-align:center;font-weight:600}
+footer{color:var(--sub);font-size:.8rem;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="env">
+  <header><h1 id="titulo">💳 Mensualidad</h1><p class="sub" id="sub">Cargando…</p></header>
+  <div id="regreso" class="aviso" hidden></div>
+  <p id="error" class="error" hidden></p>
+
+  <div id="todo" hidden>
+    <div class="card">
+      <div class="sub" style="text-align:center">Tu mensualidad</div>
+      <div class="monto" id="monto"></div>
+      <div class="sub" style="text-align:center">Página, citas en línea, tarjeta de cliente frecuente y QR</div>
+      <div class="estado" id="estado"></div>
+    </div>
+
+    <div class="card">
+      <b>Opción 1 · Tarjeta u OXXO</b>
+      <p class="nota" style="margin-top:4px">Pago seguro con Mercado Pago. Se confirma solo.</p>
+      <button class="btn mp" id="pagarMp">Pagar con Mercado Pago</button>
+    </div>
+
+    <div class="card" id="cajaTransfer" hidden>
+      <b>Opción 2 · Transferencia o depósito</b>
+      <div style="margin-top:8px" id="datos"></div>
+      <button class="btn sec" id="copiar">📋 Copiar número de cuenta</button>
+      <a class="btn wa" id="avisar" target="_blank" rel="noopener" hidden>💬 Ya transferí: mandar comprobante</a>
+      <p class="nota">Cuando se confirme tu transferencia, tu página queda activa otro mes.</p>
+    </div>
+  </div>
+  <footer>Fábrica de Apps · Ediciones Guizar</footer>
+</div>
+<script>
+const API = "https://fmimdflqozqgyhsfztdk.supabase.co/functions/v1/cobros";
+const q = new URLSearchParams(location.search);
+const slug = (q.get("a") || "").replace(/[^a-z0-9-]/g, "");
+const $ = (id) => document.getElementById(id);
+const peso = (n) => "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+let cuenta = "";
+async function api(accion) {
+  const r = await fetch(`${API}?accion=${accion}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || d.error) throw new Error(d.error || "No se pudo conectar. Revisa tu internet.");
+  return d;
+}
+function fila(etq, valor) { const d = document.createElement("div"); d.className = "dato"; d.innerHTML = "<span></span><b></b>"; d.children[0].textContent = etq; d.children[1].textContent = valor; return d; }
+
+(async () => {
+  if (!slug) { $("sub").textContent = ""; $("error").textContent = "Este enlace no es válido."; $("error").hidden = false; return; }
+  const pago = q.get("pago");
+  if (pago) {
+    const t = { ok: ["¡Gracias! 🎉 Tu pago se está confirmando. En unos minutos tu página queda activa.", "ok"], pendiente: ["Tu pago quedó pendiente (por ejemplo, si pagas en OXXO). En cuanto se acredite, tu página se activa sola.", "warn"], error: ["El pago no se completó. Puedes intentar otra vez o pagar por transferencia.", "bad"] }[pago];
+    if (t) { $("regreso").textContent = t[0]; $("regreso").className = `aviso estado ${t[1]}`; $("regreso").hidden = false; }
+  }
+  try {
+    const d = await api("info");
+    document.title = `Mensualidad · ${d.negocio}`;
+    $("titulo").textContent = `💳 ${d.negocio}`;
+    $("sub").textContent = "Fábrica de Apps";
+    $("monto").textContent = peso(d.precio);
+    const dias = d.dias_restantes;
+    const e = $("estado");
+    if (d.estado === "pausada") { e.textContent = "⏸️ Tu página está en pausa. Paga para reactivarla al momento."; e.className = "estado bad"; }
+    else if (dias < 0) { e.textContent = `Venció el ${d.vence_texto}. Paga pronto para que no se pause.`; e.className = "estado bad"; }
+    else if (dias <= 3) { e.textContent = `${d.estado === "prueba" ? "Tu prueba gratis termina" : "Vence"} ${dias === 0 ? "hoy" : dias === 1 ? "mañana" : "el " + d.vence_texto}.`; e.className = "estado warn"; }
+    else { e.textContent = `${d.estado === "prueba" ? "Prueba gratis" : "Activa"} hasta el ${d.vence_texto}.`; e.className = "estado ok"; }
+    if (d.transferencia) {
+      const t = d.transferencia; cuenta = t.cuenta;
+      if (t.banco) $("datos").appendChild(fila("Banco", t.banco));
+      $("datos").appendChild(fila(t.tipo || "Cuenta", t.cuenta));
+      if (t.titular) $("datos").appendChild(fila("A nombre de", t.titular));
+      $("datos").appendChild(fila("Monto", peso(d.precio)));
+      $("cajaTransfer").hidden = false;
+    }
+    if (d.avisar_pago) { $("avisar").href = d.avisar_pago; $("avisar").hidden = false; }
+    $("todo").hidden = false;
+  } catch (e) { $("sub").textContent = ""; $("error").textContent = e.message; $("error").hidden = false; }
+})();
+$("pagarMp").onclick = async () => {
+  $("pagarMp").disabled = true; $("pagarMp").textContent = "Abriendo Mercado Pago…";
+  try { const d = await api("pagar_mp"); location.href = d.url; }
+  catch (e) { $("pagarMp").disabled = false; $("pagarMp").textContent = "Pagar con Mercado Pago"; alert(e.message); }
+};
+$("copiar").onclick = async () => { try { await navigator.clipboard.writeText(cuenta); $("copiar").textContent = "✓ Copiado"; } catch (e) { $("copiar").textContent = "Mantén presionado el número para copiarlo"; } };
+</script>
+</body>
+</html>
